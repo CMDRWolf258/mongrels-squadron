@@ -55,7 +55,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.27"
+APP_VERSION = "0.18.28"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -2309,6 +2309,7 @@ class MongrelHudApp:
         self.snapshot = ScoutSnapshot({})
         self.navigation_arrival: dict[str, Any] = {}
         self.deck_lock = threading.Lock()
+        self.deck_binding_cache = None
         self.sourcing_lock = threading.RLock()
         self.sourcing_job = {}
         self.sourcing_cache = {}
@@ -5069,9 +5070,18 @@ class MongrelHudApp:
     def ship_deck(self, body):
         action = body.get("action")
         ident = body.get("id")
-        with self.deck_lock:
-            root = Path(os.environ.get("LOCALAPPDATA", str(Path.home()/"AppData"/"Local"))) / "Frontier Developments" / "Elite Dangerous" / "Options" / "Bindings"
-            imported, source = deck_bindings(root)
+        # Never queue input behind another controller or a binding edit.
+        # The initiating tablet owns a short, expiring FIFO.
+        if not self.deck_lock.acquire(blocking=action!="send"):
+            raise ValueError("ship_deck_busy")
+        try:
+            cached = getattr(self, "deck_binding_cache", None)
+            if action=="read" or cached is None:
+                root = Path(os.environ.get("LOCALAPPDATA", str(Path.home()/"AppData"/"Local"))) / "Frontier Developments" / "Elite Dangerous" / "Options" / "Bindings"
+                imported, source = deck_bindings(root)
+                self.deck_binding_cache = (imported, source)
+            else:
+                imported, source = cached
             with self.store.lock:
                 overrides = self.store.data.get("shipDeckOverrides", {})
                 overrides = dict(overrides) if isinstance(overrides,dict) else {}
@@ -5095,8 +5105,8 @@ class MongrelHudApp:
             if action=="send":
                 if ident not in DECK_IDS or not bindings.get(ident):
                     raise ValueError("deck_action_unmapped")
-                # Match the displayed chord so a changed active preset cannot
-                # silently send a different key from the one the pilot saw.
+                # Match the displayed chord against the last explicit sync or
+                # local edit. Sync again after changing bindings in Elite.
                 if body.get("binding")!=bindings[ident]:
                     raise ValueError("binding_changed_refresh_deck")
                 deck_send(bindings[ident])
@@ -5107,6 +5117,8 @@ class MongrelHudApp:
                 {"id":key,"label":label,"profile":profile,"group":group,"binding":bindings[key],
                  "origin":"manual" if key in overrides else "imported" if bindings[key] else "unmapped"}
                 for key,label,profile,group,_ in DECK_ACTIONS]}
+        finally:
+            self.deck_lock.release()
 
     def commodity_sourcing(self, body):
         """Paired controller only; no queries from background state polling."""

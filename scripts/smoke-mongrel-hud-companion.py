@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.27"
+assert hud.APP_VERSION=="0.18.28"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -113,12 +113,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.24"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.25"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.26"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.27"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.28"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.28"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.29"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.28",
+    "name":"Mongrel HUD Windows v0.18.29",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.28" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.29" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -709,7 +710,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.27"
+    assert hud.APP_VERSION=="0.18.28"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -1102,7 +1103,7 @@ for invalid in ("A+B","ALT+TAB","ALT+F4","CTRL+ESC","CTRL+ALT+DELETE","not-a-key
     except ValueError:
         pass
 deck_app=types.SimpleNamespace(deck_lock=hud.threading.Lock(),store=types.SimpleNamespace(lock=hud.threading.RLock(),data={},save=lambda:None))
-with mock.patch.object(hud,"deck_bindings",return_value=({"SetSpeedZero":"0"},"Test preset")),mock.patch.object(hud,"deck_send") as send:
+with mock.patch.object(hud,"deck_bindings",return_value=({"SetSpeedZero":"0"},"Test preset")) as importer,mock.patch.object(hud,"deck_send") as send:
     for invalid in ({"action":"send","id":"not-a-command","binding":"0"},{"action":"send","id":"SetSpeedZero","binding":"1"},{"action":"send","id":"SetSpeed25","binding":"1"}):
         try:
             hud.MongrelHudApp.ship_deck(deck_app,invalid)
@@ -1116,6 +1117,15 @@ with mock.patch.object(hud,"deck_bindings",return_value=({"SetSpeedZero":"0"},"T
     assert deck_app.store.data["shipDeckOverrides"]["SetSpeedZero"]=="LCTRL+K"
     hud.MongrelHudApp.ship_deck(deck_app,{"action":"reset","id":"SetSpeedZero"})
     assert "SetSpeedZero" not in deck_app.store.data["shipDeckOverrides"]
+    assert importer.call_count==1  # All sends and mapping edits reuse the cache.
+    hud.MongrelHudApp.ship_deck(deck_app,{"action":"read"})
+    assert importer.call_count==2
+    with deck_app.deck_lock:
+        try:
+            hud.MongrelHudApp.ship_deck(deck_app,{"action":"send","id":"SetSpeedZero","binding":"0"})
+            raise AssertionError("busy controller accepted another queued input")
+        except ValueError as exc:
+            assert str(exc)=="ship_deck_busy"
 # Elite's actual XML arrow names, plus dedicated navigation vs numpad keys.
 with tempfile.TemporaryDirectory() as tmp:
     folder=Path(tmp)
