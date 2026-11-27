@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.18 — Stable colonization warning footer
+
+Stale data, Raven connection errors, and uncertain reporting warnings now occupy two permanently reserved rows below the construction cart totals. These warnings cannot shift the commodity rows or resize the overlay when they appear or clear. The paired iPad already shows warnings below its project list. Scout 1.14.8 is unchanged.
+
 ## Mongrel HUD 0.18.17 — Steady colonization cart
 
 Automatic Raven refreshes no longer interrupt the controller list or desktop cart. Manual refresh feedback appears below the project list and clears after five seconds; connection and reporting warnings remain visible at the bottom. The cart preserves its right edge when ship/carrier columns appear or disappear. Existing positions migrate on the first visible render; unlock the overlay and drag once to set a new right edge. Scout 1.14.8 is unchanged. Raven reads and reports go directly from Scout to Raven, not via the squad site.
