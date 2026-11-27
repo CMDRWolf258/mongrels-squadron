@@ -65,7 +65,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.14.6"
+assert plugin.PLUGIN_VERSION == "1.14.7"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -840,3 +840,72 @@ plugin._publish_hud_event("Wolf258", "Diaba", "", {
 assert plugin._hud_state_snapshot()["ship"]["name"] == ""
 assert plugin._hud_state_snapshot()["ship"]["type"] == "Anaconda Mk II"
 print("✓ Unnamed Anaconda Mk II falls back to ship type; old custom names are cleared")
+
+
+# Raven construction requirements and shared carrier inventory remain separate
+# from the existing cargo mission model. No live network calls in this smoke test.
+raven = plugin._get_raven_module()
+raw = [
+    {"buildId": "a", "buildName": "First", "systemName": "Diaba", "marketId": 100,
+     "commodities": {"steel": 100, "water": 0, "aluminium": 20},
+     "linkedFC": [{"marketId": 123}]},
+    {"buildId": "b", "buildName": "Second", "systemName": "Diaba", "marketId": 101,
+     "commodities": {"steel": 100}, "linkedFC": [{"marketId": 123}]},
+]
+snapshot = {"projects": [raven.project_view(p) for p in raw], "primary": "",
+            "stocks": {"123": {"steel": 120, "aluminium": 0}}, "updatedAt": "2026-01-01T00:00:00Z"}
+cargo = {"updatedAt": "2026-01-01T00:00:00Z", "capacity": 100,
+         "items": [{"key": "steel", "count": 50, "missionCount": 20}]}
+view = raven.cart_view(snapshot, cargo, {"steel": {"name": "Steel", "category": "Metals", "supply": 10, "order": 0}})
+assert view["remaining"] == 220 and view["toCollect"] == 70
+assert view["collectionTrips"] == 1 and view["deliveryTrips"] == 3
+assert view["showShip"] and view["showCarrier"]
+assert {r["key"] for r in view["rows"]} == {"steel", "aluminium"}
+assert [r["available"] for r in view["rows"] if r["key"] == "aluminium"] == [False]
+assert raven.cart_view(snapshot, cargo, source="manual", selected=["b"])["remaining"] == 100
+snapshot["primary"] = "a"
+assert raven.cart_view(snapshot, cargo)["remaining"] == 120
+snapshot["stocks"]["123"] = None
+assert raven.cart_view(snapshot, cargo)["collectionTrips"] is None
+snapshot["stocks"]["123"] = {}
+assert not raven.cart_view(snapshot, {"updatedAt": "now", "capacity": 100, "items": []})["showShip"]
+assert raven.cart_view(snapshot, cargo, construction=True)["rows"][0]["key"] == "aluminium"
+assert raven.cart_view(snapshot, cargo, source="manual", selected=[])["remaining"] == 0
+assert raven.reporting_request(snapshot["projects"], "Wolf258", "100", "Diaba", {
+    "event": "ColonisationContribution", "MarketID": 100,
+    "Contributions": [{"Name": "$steel_name;", "Amount": 15}],
+}) == ("POST", "/api/project/a/contribute/Wolf258", {"steel": 15})
+assert raven.reporting_request(snapshot["projects"], "Wolf258", "123", "Diaba", {
+    "event": "CargoTransfer", "Transfers": [{"Type": "steel", "Count": 10, "Direction": "toship"}],
+}) == ("PATCH", "/api/fc/123/cargo", {"steel": -10})
+assert raven.reporting_request(snapshot["projects"], "Wolf258", "999", "Diaba", {
+    "event": "CargoTransfer", "Transfers": [{"Type": "steel", "Count": 10, "Direction": "toship"}],
+}) is None
+depot = raven.reporting_request(snapshot["projects"], "Wolf258", "100", "Diaba", {
+    "event": "ColonisationConstructionDepot", "MarketID": 100,
+    "ResourcesRequired": [{"Name": "steel", "RequiredAmount": 200, "ProvidedAmount": 150},
+                          {"Name": "aluminium", "RequiredAmount": 20, "ProvidedAmount": 20}],
+})
+assert depot[0:2] == ("PATCH", "/api/project/a")
+assert depot[2]["commodities"] == {"steel": 50, "aluminium": 0}
+
+class FakeRaven:
+    key = "fake"
+    def __init__(self):
+        self.writes = []
+    def request(self, path, method="GET", body=None, missing=None):
+        if method == "GET":
+            return raw
+        self.writes.append((path, method, body))
+        return True
+
+with TemporaryDirectory() as folder:
+    ledger = Path(folder) / "raven.sqlite3"
+    client = FakeRaven()
+    event = {"event": "ColonisationContribution", "MarketID": 100, "timestamp": "2026-01-01T00:00:00Z",
+             "Contributions": [{"Name": "steel", "Amount": 15}]}
+    assert raven.report_live_event(client, "Wolf258", "100", "Diaba", event, ledger) == "sent"
+    assert raven.report_live_event(client, "Wolf258", "100", "Diaba", event, ledger) == "duplicate"
+    assert len(client.writes) == 1
+
+print("✓ Raven construction cart, multi-project allocation, dynamic columns and writeback deduplication")

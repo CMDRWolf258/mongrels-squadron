@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.15 — Raven Colonial Cart
+
+Install with Scout 1.14.7. In EDMC preferences, enable the Raven cart and enter your Raven API key locally. On the paired iPad HUD page use **Colonization Cart** to select Continuous (default), Automatic or Off, follow Raven or choose projects locally, and press **Refresh Raven**. The game overlay shows remaining materials, current ship and linked carrier columns when relevant, market availability and estimated collection/delivery trips. Existing Cargo mission overlay and saved layouts are preserved. Raven is the authoritative construction planner. Reporting is separately opt-in in Scout; disable other Raven reporters before enabling it.
+
 ## Mongrel HUD 0.18.14 — Recover scans taken before starting an expedition
 
 In the paired iPad **Exploration → Surveyor · Expedition Control**, expand **Include Previous Scans**. Check the journal-confirmed bodies scanned within 24 hours before the expedition started, then press **Include Selected Scans**. The updated Scout local ledger handles the estimates, avoiding double counting and leaving earlier exclusions alone. The new control requires **Scout 1.14.6** and HUD **0.18.14** on the same Elite PC. No EDDiscovery historical credits are added automatically.

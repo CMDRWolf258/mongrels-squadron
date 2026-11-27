@@ -1,3 +1,7 @@
+## Scout 1.14.7 — Raven Colonial Cart
+
+Requires HUD 0.18.15. In EDMC Settings → Mongrel Scout, enable the Raven Colonial construction cart and enter your Raven API key from Raven account settings. The key stays in local EDMC settings and is not exposed to the iPad or squad site. To replace SRVSurvey's Raven reporting, stop or disable its Raven reporting first, then enable **Report deliveries and carrier movements to Raven** in Scout. Only one reporter should be active. Ambiguous write failures are not retried; check Raven inventory/progress if a reporting warning appears. Raven remains authoritative, and the existing Cargo overlay is unchanged.
+
 ## Scout 1.14.6 — Include selected pre-start Surveyor scans
 
 Surveyor can now include specific scans made up to 24 hours before **Start Exploration**. On the paired iPad HUD, open **Exploration → Surveyor → Include Previous Scans** and select eligible journal-observed bodies from the current system. Those estimated values join the current expedition only when explicitly selected. The local ledger prevents duplicate credits and preserves later DSS mapping increments, Already Explored, and Undo Exclusion. No historical EDD data or manual guessed credit amounts are imported.

@@ -29,6 +29,10 @@ function fakeKv(seed={}){
   };
 }
 
+// Keep the history-pruning wall clock within the fixed September fixture.
+// Production history retention remains unchanged.
+Date.now = () => Date.parse('2026-09-23T02:05:00.000Z');
+
 const control={
   defaults:{defaultTick:'19:00',transitionMinutes:90,lateGraceHours:3,rolloverPolicy:'safety'},
   systemSettings:{},

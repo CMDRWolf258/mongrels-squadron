@@ -54,13 +54,14 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.14"
+APP_VERSION = "0.18.15"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
 SCOUT_CARGO_PRIORITY_URL = "http://127.0.0.1:43857/v1/cargo-priority"
 SCOUT_ROUTE_CONTROL_URL = "http://127.0.0.1:43857/v1/route"
 SCOUT_SURVEYOR_CONTROL_URL = "http://127.0.0.1:43857/v1/exploration/control"
+SCOUT_COLONIZATION_CONTROL_URL = "http://127.0.0.1:43857/v1/colonization/control"
 SCOUT_MINING_REPORT_URL = "http://127.0.0.1:43857/v1/mining/report"
 SCOUT_MINING_CENTER_URL = "http://127.0.0.1:43857/v1/mining/center"
 MINING_DATA_URL = "http://127.0.0.1:43857/v1/mining/data"
@@ -213,7 +214,7 @@ CORE_MODULES = (
 MODULE_VOCABULARY = tuple(dict.fromkeys((*CORE_MODULES, *TACTICAL_MODULES.keys())))
 MODULE_LOOKUP = {" ".join(name.upper().replace("-", " ").split()): name for name in MODULE_VOCABULARY}
 
-PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "surface", "miningintel", "surveyor", "surveyor_dss", "surveyor_body", "surveyor_alert", "surveyor_log", "surveyor_bio", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout", "navcarrier")
+PANEL_IDS = ("own", "target", "subsystems", "bounties", "cargo", "colonization", "surface", "miningintel", "surveyor", "surveyor_dss", "surveyor_body", "surveyor_alert", "surveyor_log", "surveyor_bio", "mission", "trade", "scoutboard", "scoutnearby", "alerts", "orderalerts", "notes", "navcourse", "navsteps", "navsignal", "navfuel", "navscout", "navcarrier")
 VALID_PROFILES = ("combat", "surface", "navigation", "exploration")
 PANEL_TITLES = {
     "own": "OWN SHIP",
@@ -221,6 +222,7 @@ PANEL_TITLES = {
     "subsystems": "TARGET LOADOUT",
     "bounties": "BOUNTIES",
     "cargo": "CARGO",
+    "colonization": "COLONIZATION CART",
     "surface": "SURFACE NAVIGATION",
     "miningintel": "MINING INTEL",
     "surveyor": "EXPEDITION TELEMETRY",
@@ -798,6 +800,7 @@ def default_layout() -> dict[str, Any]:
             "target": {"x": 40, "y": 270, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "bounties": {"x": 40, "y": 455, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "cargo": {"x": 420, "y": 455, "visible": False, "scale": 0.9, "profiles": ["combat", "surface"]},
+            "colonization": {"x": 40, "y": 80, "visible": True, "scale": 0.9, "profiles": list(VALID_PROFILES)},
             "subsystems": {"x": 760, "y": 70, "visible": True, "scale": 1.0, "profiles": ["combat"]},
             "surface": {"x": 40, "y": 70, "visible": True, "scale": 1.0, "profiles": ["surface"]},
             "miningintel": {"x": 40, "y": 350, "visible": True, "scale": 0.9, "profiles": ["surface"]},
@@ -4456,6 +4459,15 @@ class MongrelHudApp:
                 self.snapshot.data["cargo"] = cargo
         return result
 
+    def colonization_control(self, body: dict[str, Any]) -> dict[str, Any]:
+        request = urllib.request.Request(
+            SCOUT_COLONIZATION_CONTROL_URL,
+            data=json.dumps(body).encode("utf-8"),
+            headers={"Content-Type": "application/json", "X-Mongrel-HUD-Raven-Action": "1"},
+            method="POST",
+        )
+        return request_scout_json(request, "colonization_control_failed")
+
     def surveyor_control(self, action: str, value: Any = None, system: str = "") -> dict[str, Any]:
         """On-demand, paired-iPad command to Scout's loopback SQLite ledger."""
         if action not in {"start", "end", "mark_existing", "undo_existing", "include_previous", "intel_on", "intel_off", "intel_refresh", "record_quote", "edd_connect", "edd_off", "edd_refresh"}:
@@ -6932,6 +6944,62 @@ class MongrelHudApp:
 
         return width, round(y + 5 * scale)
 
+    def _render_colonization_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
+        data = self.snapshot.data.get("colonization") or {}
+        ship, carrier = bool(data.get("showShip")), bool(data.get("showCarrier"))
+        width = int((300 + 68 * ship + 68 * carrier) * scale)
+        y = self._draw_title(canvas, "COLONIZATION CART", scale, width)
+        pad, step = 10 * scale, 17 * scale
+        def line(label, color=HUD_WHITE, bold=False):
+            nonlocal y
+            self._draw_text(canvas, pad, y, label, scale, 10, color, bold)
+            y += step
+        projects = data.get("projects") or []
+        for project in projects:
+            line(self.clip_line(project.get("name") or project.get("id"), 48), HUD_CYAN, True)
+        if data.get("refreshing"):
+            line("Refreshing Raven...", HUD_MUTED)
+        if data.get("stale") or not self.snapshot.connected:
+            line("STALE DATA · check Raven / Scout", HUD_AMBER)
+        elif data.get("error"):
+            line(self.clip_line(data.get("error"), 48), HUD_AMBER)
+        if data.get("reportError"):
+            line("RAVEN REPORT UNCERTAIN · CHECK RAVEN", HUD_AMBER)
+        rows = data.get("rows") or []
+        if not rows:
+            line("All materials delivered" if projects else "No selected Raven projects", HUD_GREEN if projects else HUD_MUTED)
+            return width, int(y + pad)
+        cols = [("need", "NEED")]
+        if ship:
+            cols.append(("ship", "SHIP"))
+        if carrier:
+            cols.append(("carrier", "FC"))
+        positions = [width - pad - 68 * scale * (len(cols) - 1 - i) for i in range(len(cols))]
+        for (_, title), x in zip(cols, positions):
+            self._draw_text(canvas, x, y, title, scale, 10, HUD_CYAN, True, anchor="ne")
+        y += step
+        last_category = None
+        for row in rows:
+            category = row.get("category")
+            if not data.get("construction") and category != last_category:
+                line(str(category or "Other").upper(), HUD_CYAN, True)
+                last_category = category
+            color = HUD_GREEN if row.get("fulfilled") else HUD_MUTED if row.get("available") is False else HUD_WHITE
+            self._draw_text(canvas, pad, y, ("✓ " if row.get("fulfilled") else "") + self.clip_line(row.get("name"), 29), scale, 10, color)
+            for (key, _), x in zip(cols, positions):
+                value = row.get(key)
+                label = "—" if value is None else f"{value:,}" if isinstance(value, int) else str(value)
+                self._draw_text(canvas, x, y, label, scale, 10, color, anchor="ne")
+            y += step
+        y += 5 * scale
+        def amount(key):
+            value = data.get(key)
+            return "—" if value is None else f"{value:,}" if isinstance(value, int) else str(value)
+        line("Remaining: " + amount("remaining") + " t", HUD_WHITE, True)
+        line("Collection trips: " + amount("collectionTrips"), HUD_CYAN)
+        line("Delivery trips: " + amount("deliveryTrips"), HUD_CYAN)
+        return width, int(y + pad)
+
     def _render_cargo_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
         state = self.scout_state()
         cargo = state.get("cargo") if isinstance(state.get("cargo"), dict) else {}
@@ -7991,6 +8059,8 @@ class MongrelHudApp:
             width, height = self._render_loadout_canvas(canvas, scale)
         elif panel_id == "cargo":
             width, height = self._render_cargo_canvas(canvas, scale)
+        elif panel_id == "colonization":
+            width, height = self._render_colonization_canvas(canvas, scale)
         elif panel_id == "surface":
             width, height = self._render_surface_canvas(canvas, scale)
         elif panel_id == "miningintel":
@@ -8059,6 +8129,10 @@ class MongrelHudApp:
                 panel_cfg = layout["panels"][panel_id]
                 active_for_profile = profile in (panel_cfg.get("profiles") or [])
                 should_show = master_visible and active_for_profile and bool(panel_cfg.get("visible", True)) and not hide_for_capture
+                if panel_id == "colonization":
+                    cart = self.snapshot.data.get("colonization") or {}
+                    mode = cart.get("mode", "continuous")
+                    should_show = should_show and bool(cart.get("enabled")) and (mode == "continuous" or (mode == "automatic" and bool(cart.get("autoVisible"))))
                 # No empty warning window: it appears only for live, local
                 # events and disappears when leaving the system.
                 if should_show and panel_id in {"surveyor_alert", "surveyor_log"}:
@@ -8804,6 +8878,8 @@ def make_handler(app: MongrelHudApp):
                     result = {"ok": True, "missionSystem": app.set_mission_system_filter(str(body.get("system") or "all"))}
                 elif path == "/api/cargo-priority":
                     result = app.set_cargo_priority(str(body.get("faction") or "auto"))
+                elif path == "/api/colonization":
+                    result = app.colonization_control(body)
                 elif path == "/api/surveyor":
                     result = app.surveyor_control(str(body.get("action") or ""), body.get("value"), str(body.get("system") or ""))
                 elif path == "/api/clipboard/system":

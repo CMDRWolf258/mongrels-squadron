@@ -25,7 +25,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.14.6"
+PLUGIN_VERSION = "1.14.7"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -134,6 +134,32 @@ HUD_EVENT_TYPES = {
     "SellExplorationData": "exploration.sale",
     "MultiSellExplorationData": "exploration.sale",
 }
+
+KEY_RAVEN_ENABLED = "MongrelScoutRavenEnabled"
+KEY_RAVEN_KEY = "MongrelScoutRavenApiKey"
+KEY_RAVEN_REPORTING = "MongrelScoutRavenReporting"
+KEY_RAVEN_SETTINGS = "MongrelScoutRavenSettings"
+_raven_enabled_var = None
+_raven_key_var = None
+_raven_reporting_var = None
+_raven_report_queue = deque()
+_raven_report_running = False
+_raven_report_error = ""
+_raven_report_owner = ""
+_raven_depot_signature = None
+_raven_process_start = time.time()
+_raven_lock = threading.RLock()
+_raven_module = None
+_raven_owner = ""
+_raven_cache = None
+_raven_error = ""
+_raven_refreshing = False
+_raven_last_attempt = 0.0
+_raven_market = None
+_raven_dock = ""
+_raven_construction = False
+_raven_context_owner = ""
+RAVEN_REFRESH_SECONDS = 45.0
 
 KEY_VERSION = "MongrelScoutConfigVersion"
 KEY_ENABLED = "MongrelScoutEnabled"
@@ -275,6 +301,274 @@ _surveyor_history_started: set[str] = set()
 _surveyor_restore_guard = threading.Lock()
 _surveyor_restore_attempts = 0
 _surveyor_restore_last_attempt = 0.0
+
+
+def _get_raven_module():
+    global _raven_module
+    with _raven_lock:
+        if _raven_module is None:
+            spec = importlib.util.spec_from_file_location(
+                "mongrel_raven_colonization", Path(__file__).with_name("raven_colonization.py"))
+            if spec is None or spec.loader is None:
+                raise RuntimeError("raven_module_unavailable")
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            _raven_module = module
+        return _raven_module
+
+
+def _raven_settings(commander):
+    try:
+        all_settings = json.loads(config.get_str(KEY_RAVEN_SETTINGS) or "{}")
+        value = all_settings.get(commander.casefold(), {})
+        if not isinstance(value, dict):
+            value = {}
+    except (ValueError, TypeError, AttributeError):
+        value = {}
+    mode = value.get("mode", "continuous")
+    source = value.get("source", "raven")
+    selected = value.get("selected", [])
+    return {
+        "mode": mode if mode in {"continuous", "automatic", "off"} else "continuous",
+        "source": source if source in {"raven", "manual"} else "raven",
+        "selected": [x for x in selected if isinstance(x, str)][:100] if isinstance(selected, list) else [],
+    }
+
+
+def _raven_refresh(commander, force=False):
+    """Single-flight Raven reads, independent of the site feed and HUD poll."""
+    global _raven_owner, _raven_cache, _raven_error, _raven_refreshing, _raven_last_attempt
+    if not commander or not config.get_bool(KEY_RAVEN_ENABLED):
+        return
+    identity = commander.casefold()
+    with _raven_lock:
+        if identity != _raven_owner:
+            _raven_owner = identity
+            _raven_cache = None
+            _raven_error = ""
+            _raven_last_attempt = 0.0
+        if _raven_refreshing:
+            return
+        now = time.monotonic()
+        if not force and _raven_last_attempt and now - _raven_last_attempt < RAVEN_REFRESH_SECONDS:
+            return
+        _raven_last_attempt = now
+        _raven_refreshing = True
+    def worker():
+        global _raven_cache, _raven_error, _raven_refreshing
+        try:
+            module = _get_raven_module()
+            data = module.RavenClient(config.get_str(KEY_RAVEN_KEY) or "").snapshot(commander)
+            with _raven_lock:
+                if _raven_owner == identity and config.get_bool(KEY_RAVEN_ENABLED):
+                    _raven_cache = data
+                    _raven_error = ""
+        except Exception:
+            with _raven_lock:
+                if _raven_owner == identity:
+                    _raven_error = "Raven refresh failed; last successful data retained."
+        finally:
+            with _raven_lock:
+                _raven_refreshing = False
+    threading.Thread(target=worker, name="MongrelRavenRefresh", daemon=True).start()
+
+
+def _raven_observe_context(commander, entry):
+    """Market availability belongs only to the current docked market."""
+    global _raven_context_owner, _raven_market, _raven_dock, _raven_construction
+    event = str(entry.get("event") or "")
+    market_id = _decimal_text(entry.get("MarketID")) or ""
+    identity = str(commander or "").casefold()
+    with _raven_lock:
+        if identity != _raven_context_owner:
+            _raven_context_owner = identity
+            _raven_market = None
+            _raven_dock = ""
+            _raven_construction = False
+        if event in {"Undocked", "FSDJump", "SupercruiseEntry", "Shutdown", "LoadGame"} or (
+                event == "Location" and not entry.get("Docked")):
+            _raven_market = None
+            _raven_dock = ""
+            _raven_construction = False
+        if event == "Docked" or (event in {"Location", "CarrierJump"} and entry.get("Docked")):
+            if _raven_dock != market_id:
+                _raven_market = None
+                _raven_construction = False
+            _raven_dock = market_id
+            station_type = str(entry.get("StationType") or "").casefold()
+            if "construction" in station_type or "colonisation" in station_type:
+                _raven_construction = True
+        if event == "ColonisationConstructionDepot" and market_id:
+            if _raven_dock == market_id:
+                _raven_construction = True
+                _raven_market = None
+        if event != "Market" or not market_id or market_id != _raven_dock:
+            return
+        data = entry
+        if not isinstance(data.get("Items"), list):
+            try:
+                candidate = json.loads((Path(_surveyor_journal_directory()) / "Market.json").read_text(encoding="utf-8"))
+                if (_decimal_text(candidate.get("MarketID")) == market_id and
+                        candidate.get("timestamp") == entry.get("timestamp")):
+                    data = candidate
+            except (OSError, ValueError, TypeError):
+                pass
+        items = data.get("Items")
+        if not isinstance(items, list):
+            _raven_market = None
+            return
+        market = {}
+        for index, item in enumerate(items):
+            if not isinstance(item, Mapping):
+                continue
+            key = _commodity_key(item.get("Name"))
+            if key:
+                market[key] = {"name": item.get("Name_Localised") or "",
+                               "category": item.get("Category_Localised") or "",
+                               "supply": max(0, _optional_int(item.get("Stock")) or 0),
+                               "order": index}
+        _raven_market = market
+
+
+def _raven_queue_reporting(commander, system, entry):
+    """Opt-in live writeback. Never report historical journal replay."""
+    global _raven_report_running, _raven_report_error, _raven_report_owner, _raven_depot_signature
+    if not config.get_bool(KEY_RAVEN_REPORTING) or not config.get_str(KEY_RAVEN_KEY):
+        return
+    event = entry.get("event")
+    if event not in {"ColonisationContribution", "ColonisationConstructionDepot", "CargoTransfer", "MarketBuy", "MarketSell"}:
+        return
+    try:
+        stamp = datetime.fromisoformat(str(entry.get("timestamp") or "").replace("Z", "+00:00")).timestamp()
+    except (ValueError, TypeError, OverflowError):
+        return
+    if stamp < _raven_process_start or abs(time.time() - stamp) > 120:
+        return
+    with _raven_lock:
+        identity = commander.casefold()
+        if identity != _raven_context_owner or not _raven_dock:
+            return
+        dock = _raven_dock
+        if _raven_report_owner != identity:
+            _raven_report_owner = identity
+            _raven_report_error = ""
+            _raven_depot_signature = None
+        if event == "ColonisationConstructionDepot":
+            signature = (identity, dock, json.dumps(entry.get("ResourcesRequired"), sort_keys=True))
+            if signature == _raven_depot_signature:
+                return
+            _raven_depot_signature = signature
+        if len(_raven_report_queue) >= 64:
+            _raven_report_error = "Raven report queue full. Reconcile Raven before continuing."
+            return
+        _raven_report_queue.append((commander, system, dock, json.loads(json.dumps(entry))))
+        if _raven_report_running:
+            return
+        _raven_report_running = True
+
+    def worker():
+        global _raven_report_running, _raven_report_error, _raven_depot_signature
+        while True:
+            with _raven_lock:
+                if not _raven_report_queue:
+                    _raven_report_running = False
+                    return
+                cmdr, sysname, dock_market, journal = _raven_report_queue.popleft()
+                owner = _raven_context_owner
+            if (owner != cmdr.casefold() or not config.get_bool(KEY_RAVEN_ENABLED)
+                    or not config.get_bool(KEY_RAVEN_REPORTING)):
+                continue
+            try:
+                module = _get_raven_module()
+                client = module.RavenClient(config.get_str(KEY_RAVEN_KEY) or "")
+                result = module.report_live_event(client, cmdr, dock_market, sysname, journal)
+                if result == "sent":
+                    _raven_refresh(cmdr, force=True)
+            except Exception:
+                with _raven_lock:
+                    if _raven_report_owner == cmdr.casefold():
+                        _raven_report_error = "Raven report uncertain or failed. Check Raven inventory and progress; no automatic replay."
+                    _raven_depot_signature = None
+
+    threading.Thread(target=worker, name="MongrelRavenReporting", daemon=True).start()
+
+
+def _raven_snapshot(state):
+    commander = str(state.get("commander") or "").strip()
+    settings = _raven_settings(commander)
+    enabled = bool(config.get_bool(KEY_RAVEN_ENABLED))
+    result = {"enabled": enabled, **settings, "connected": False, "refreshing": False,
+              "stale": False, "error": "", "rows": [], "projects": [], "availableProjects": []}
+    if not enabled or not commander:
+        return result
+    _raven_refresh(commander)
+    with _raven_lock:
+        result["refreshing"] = _raven_refreshing
+        if _raven_owner != commander.casefold():
+            return result
+        data = _raven_cache
+        result["error"] = _raven_error
+        result["reportError"] = _raven_report_error if _raven_report_owner == commander.casefold() else ""
+        result["reportingEnabled"] = bool(config.get_bool(KEY_RAVEN_REPORTING) and config.get_str(KEY_RAVEN_KEY))
+        result["stale"] = bool(_raven_error and data is not None)
+        market = _raven_market if _raven_context_owner == commander.casefold() else None
+        construction = bool(_raven_construction and _raven_context_owner == commander.casefold())
+        dock = _raven_dock if _raven_context_owner == commander.casefold() else ""
+    if data is None:
+        return result
+    # A selected build's exact dock ID is also proof of construction context.
+    construction = construction or bool(dock and any(p["marketId"] == dock for p in data["projects"]))
+    try:
+        model = _get_raven_module().cart_view(
+            data, state.get("cargo"), market, source=settings["source"],
+            selected=settings["selected"], construction=construction)
+        focus = (state.get("status") or {}).get("guiFocus")
+        result.update(model)
+        result["autoVisible"] = construction or (market is not None and focus in (None, 5))
+        result["connected"] = not bool(result["error"])
+    except Exception:
+        result["error"] = "Unable to calculate construction cart from available data."
+        result["stale"] = True
+    return result
+
+
+def _raven_control(body):
+    with _hud_condition:
+        commander = str(_hud_state.get("commander") or "").strip()
+    if not commander or not config.get_bool(KEY_RAVEN_ENABLED):
+        raise ValueError("raven_not_enabled_or_commander_unavailable")
+    action = body.get("action")
+    if action == "refresh":
+        _raven_refresh(commander, force=True)
+    elif action == "settings":
+        with _raven_lock:
+            settings = _raven_settings(commander)
+            if "mode" in body:
+                if body["mode"] not in {"continuous", "automatic", "off"}:
+                    raise ValueError("invalid_raven_visibility")
+                settings["mode"] = body["mode"]
+            if "source" in body:
+                if body["source"] not in {"raven", "manual"}:
+                    raise ValueError("invalid_raven_selection_source")
+                settings["source"] = body["source"]
+            if "selected" in body:
+                selected = body["selected"]
+                known = {p["id"] for p in (_raven_cache or {}).get("projects", [])} if _raven_owner == commander.casefold() else set()
+                if not isinstance(selected, list) or len(selected) > 100 or any(
+                        not isinstance(p, str) or p not in known for p in selected):
+                    raise ValueError("invalid_raven_projects")
+                settings["selected"] = list(dict.fromkeys(selected))
+            try:
+                all_settings = json.loads(config.get_str(KEY_RAVEN_SETTINGS) or "{}")
+            except (ValueError, TypeError):
+                all_settings = {}
+            if not isinstance(all_settings, dict):
+                all_settings = {}
+            all_settings[commander.casefold()] = settings
+            config.set(KEY_RAVEN_SETTINGS, json.dumps(all_settings, separators=(",", ":")))
+    else:
+        raise ValueError("invalid_raven_action")
+    return {"ok": True, "colonization": _hud_state_snapshot().get("colonization")}
 
 
 def _surveyor_journal_directory() -> str:
@@ -747,7 +1041,7 @@ def plugin_app(parent: tk.Frame) -> tk.Frame:
 
 def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.Frame]:
     """Settings tab shown inside EDMC."""
-    global _enabled_var, _survey_intel_var, _token_var, _endpoint_var, _scout_link_var, _nav_auto_copy_var
+    global _enabled_var, _survey_intel_var, _token_var, _endpoint_var, _scout_link_var, _nav_auto_copy_var, _raven_enabled_var, _raven_key_var, _raven_reporting_var
 
     _survey_intel_var = tk.IntVar(value=1 if config.get_bool(KEY_SURVEY_INTEL_ENABLED) else 0)
     _enabled_var = tk.IntVar(value=1 if config.get_bool(KEY_ENABLED) else 0)
@@ -755,6 +1049,10 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
     _endpoint_var = tk.StringVar(value=config.get_str(KEY_ENDPOINT) or DEFAULT_ENDPOINT)
     _scout_link_var = tk.IntVar(value=1 if config.get_bool(KEY_SCOUT_LINK_ENABLED) else 0)
     _nav_auto_copy_var = tk.IntVar(value=1 if config.get_int(KEY_NAV_AUTO_COPY) != -1 else 0)
+
+    _raven_enabled_var = tk.IntVar(value=1 if config.get_bool(KEY_RAVEN_ENABLED) else 0)
+    _raven_key_var = tk.StringVar(value=config.get_str(KEY_RAVEN_KEY) or "")
+    _raven_reporting_var = tk.IntVar(value=1 if config.get_bool(KEY_RAVEN_REPORTING) else 0)
 
     frame = nb.Frame(parent)
     frame.columnconfigure(1, weight=1)
@@ -779,6 +1077,11 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         text="Surveyor: EDSM + Spansh system enrichment (opt-in; shares system name and ID only)",
         variable=_survey_intel_var,
     ).grid(row=6, column=0, columnspan=2, sticky=tk.W, pady=(8, 0))
+
+    nb.Checkbutton(frame, text="Enable Raven Colonial construction cart", variable=_raven_enabled_var).grid(row=7, column=0, columnspan=2, sticky=tk.W, pady=(8, 0))
+    nb.Label(frame, text="Raven API key").grid(row=8, column=0, sticky=tk.W)
+    tk.Entry(frame, textvariable=_raven_key_var, show="•", width=52).grid(row=8, column=1, sticky=tk.EW, padx=(8, 0))
+    nb.Label(frame, text="Opt-in: Raven receives your commander name for project lookups. Your key stays on this PC.", wraplength=520, justify=tk.LEFT).grid(row=9, column=0, columnspan=2, sticky=tk.W)
 
     privacy = (
         "BGS fields are sent from FSDJump / Location / CarrierJump only when the "
@@ -813,14 +1116,21 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "They receive no commander identity, raw journal, discovery history, or earnings. Turn off Surveyor "
         "enrichment above to prevent those lookups."
     )
+    nb.Checkbutton(frame, text="Report deliveries and carrier movements to Raven (disable other Raven reporters first)", variable=_raven_reporting_var).grid(row=10, column=0, columnspan=2, sticky=tk.W, pady=(8, 0))
     nb.Label(frame, text=privacy, wraplength=520, justify=tk.LEFT).grid(
-        row=7, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
+        row=11, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
     )
     return frame
 
 
 def prefs_changed(cmdr: str, is_beta: bool) -> None:
     """Save plugin settings when EDMC Settings closes."""
+    if _raven_enabled_var is not None:
+        config.set(KEY_RAVEN_ENABLED, int(_raven_enabled_var.get()))
+    if _raven_key_var is not None:
+        config.set(KEY_RAVEN_KEY, _raven_key_var.get().strip())
+    if _raven_reporting_var is not None:
+        config.set(KEY_RAVEN_REPORTING, int(_raven_reporting_var.get()))
     if _enabled_var is not None:
         config.set(KEY_ENABLED, int(_enabled_var.get()))
     if _survey_intel_var is not None:
@@ -943,6 +1253,7 @@ def _update_hud_status(cmdr: str, entry: Mapping[str, Any]) -> None:
         "fuelReserve": fuel_reserve,
         "cargo": _optional_int(entry.get("Cargo")),
         "fireGroup": _optional_int(entry.get("FireGroup")),
+        "guiFocus": _optional_int(entry.get("GuiFocus")),
         "destination": destination_payload,
     }
     with _hud_condition:
@@ -1022,6 +1333,13 @@ def journal_entry(
         except Exception:
             pass  # Keep existing BGS, cargo and HUD features intact.
     _publish_hud_event(cmdr, system, station, entry)
+    if config.get_bool(KEY_RAVEN_ENABLED):
+        try:
+            _raven_observe_context(cmdr, entry)
+            _raven_queue_reporting(cmdr, system, entry)
+            _raven_refresh(cmdr, force=event == "ColonisationContribution")
+        except Exception:
+            pass
 
     token = (config.get_str(KEY_TOKEN) or "").strip()
 
@@ -1359,7 +1677,7 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
-        if parsed.path not in {"/v1/site-feed/ack", "/v1/mining/report", "/v1/mining/center", "/v1/cargo-priority", "/v1/route", "/v1/exploration/control"}:
+        if parsed.path not in {"/v1/site-feed/ack", "/v1/mining/report", "/v1/mining/center", "/v1/cargo-priority", "/v1/route", "/v1/exploration/control", "/v1/colonization/control"}:
             self._write_json({"ok": False, "error": "not_found"}, status=404)
             return
         try:
@@ -1373,6 +1691,20 @@ class _HudBridgeHandler(BaseHTTPRequestHandler):
             return
         if not isinstance(body, Mapping):
             self._write_json({"ok": False, "error": "invalid_json"}, status=400)
+            return
+
+        if parsed.path == "/v1/colonization/control":
+            if (self.headers.get("X-Mongrel-HUD-Raven-Action") != "1"
+                or "application/json" not in self.headers.get("Content-Type", "").lower()
+                or self.headers.get("Origin")):
+                self._write_json({"ok": False, "error": "raven_local_control_required"}, status=403)
+                return
+            try:
+                self._write_json(_raven_control(body))
+            except ValueError as exc:
+                self._write_json({"ok": False, "error": str(exc)}, status=409)
+            except Exception:
+                self._write_json({"ok": False, "error": "raven_control_unavailable"}, status=503)
             return
 
         if parsed.path == "/v1/exploration/control":
@@ -2300,6 +2632,7 @@ def _hud_state_snapshot() -> dict[str, Any]:
     cargo = snapshot.get("cargo")
     if isinstance(cargo, dict):
         cargo.pop("_allocation", None)
+    snapshot["colonization"] = _raven_snapshot(snapshot)
     return snapshot
 
 
