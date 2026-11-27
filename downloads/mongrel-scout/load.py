@@ -25,7 +25,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.14.8"
+PLUGIN_VERSION = "1.14.9"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -152,6 +152,10 @@ _raven_lock = threading.RLock()
 _raven_module = None
 _raven_owner = ""
 _raven_cache = None
+_raven_preview = None
+_raven_preview_epoch = 0
+_raven_refresh_pending = False
+_raven_preview_seen = deque(maxlen=256)
 _raven_error = ""
 _raven_refreshing = False
 _raven_last_attempt = 0.0
@@ -338,6 +342,7 @@ def _raven_settings(commander):
 def _raven_refresh(commander, force=False):
     """Single-flight Raven reads, independent of the site feed and HUD poll."""
     global _raven_owner, _raven_cache, _raven_error, _raven_refreshing, _raven_last_attempt
+    global _raven_preview, _raven_preview_epoch, _raven_refresh_pending
     if not commander or not config.get_bool(KEY_RAVEN_ENABLED):
         return
     identity = commander.casefold()
@@ -345,23 +350,32 @@ def _raven_refresh(commander, force=False):
         if identity != _raven_owner:
             _raven_owner = identity
             _raven_cache = None
+            _raven_preview = None
+            _raven_preview_epoch += 1
+            _raven_preview_seen.clear()
             _raven_error = ""
             _raven_last_attempt = 0.0
-        if _raven_refreshing:
+        if _raven_refreshing or _raven_report_running:
+            if force:
+                _raven_refresh_pending = True
             return
         now = time.monotonic()
         if not force and _raven_last_attempt and now - _raven_last_attempt < RAVEN_REFRESH_SECONDS:
             return
         _raven_last_attempt = now
         _raven_refreshing = True
+        _raven_refresh_pending = False
+        epoch = _raven_preview_epoch
     def worker():
-        global _raven_cache, _raven_error, _raven_refreshing
+        global _raven_cache, _raven_error, _raven_refreshing, _raven_preview, _raven_refresh_pending
         try:
             module = _get_raven_module()
             data = module.RavenClient(config.get_str(KEY_RAVEN_KEY) or "").snapshot(commander)
             with _raven_lock:
-                if _raven_owner == identity and config.get_bool(KEY_RAVEN_ENABLED):
+                if (_raven_owner == identity and config.get_bool(KEY_RAVEN_ENABLED)
+                        and epoch == _raven_preview_epoch and not _raven_report_running):
                     _raven_cache = data
+                    _raven_preview = None
                     _raven_error = ""
         except Exception as exc:
             with _raven_lock:
@@ -375,6 +389,9 @@ def _raven_refresh(commander, force=False):
         finally:
             with _raven_lock:
                 _raven_refreshing = False
+                followup = _raven_refresh_pending and _raven_owner == identity and not _raven_report_running
+            if followup:
+                _raven_refresh(commander, force=True)
     threading.Thread(target=worker, name="MongrelRavenRefresh", daemon=True).start()
 
 
@@ -438,6 +455,7 @@ def _raven_observe_context(commander, entry):
 def _raven_queue_reporting(commander, system, entry):
     """Opt-in live writeback. Never report historical journal replay."""
     global _raven_report_running, _raven_report_error, _raven_report_owner, _raven_depot_signature
+    global _raven_preview, _raven_preview_epoch, _raven_refresh_pending
     if not config.get_bool(KEY_RAVEN_REPORTING) or not config.get_str(KEY_RAVEN_KEY):
         return
     event = entry.get("event")
@@ -466,19 +484,37 @@ def _raven_queue_reporting(commander, system, entry):
         if len(_raven_report_queue) >= 64:
             _raven_report_error = "Raven report queue full. Reconcile Raven before continuing."
             return
+        # The journal event is already confirmed by the game. Preview local
+        # changes on a separate copy, never on the authoritative Raven cache.
+        base = _raven_preview if _raven_preview is not None else _raven_cache
+        if _raven_owner == identity and base is not None:
+            try:
+                fingerprint = json.dumps([identity, dock, entry], sort_keys=True, separators=(",", ":"))
+                if fingerprint not in _raven_preview_seen:
+                    preview = _get_raven_module().preview_live_event(base, commander, dock, system, entry)
+                    if preview is not base:
+                        _raven_preview = preview
+                        _raven_preview_epoch += 1
+                        _raven_preview_seen.append(fingerprint)
+            except Exception:
+                pass  # Preview must never block the actual report.
         _raven_report_queue.append((commander, system, dock, json.loads(json.dumps(entry))))
         if _raven_report_running:
             return
         _raven_report_running = True
 
     def worker():
-        global _raven_report_running, _raven_report_error, _raven_depot_signature
+        global _raven_report_running, _raven_report_error, _raven_depot_signature, _raven_preview
+        last_cmdr = commander
+        needs_refresh = False
         while True:
             with _raven_lock:
                 if not _raven_report_queue:
                     _raven_report_running = False
-                    return
+                    followup = needs_refresh or _raven_preview is not None or _raven_refresh_pending
+                    break
                 cmdr, sysname, dock_market, journal = _raven_report_queue.popleft()
+                last_cmdr = cmdr
                 owner = _raven_context_owner
             if (owner != cmdr.casefold() or not config.get_bool(KEY_RAVEN_ENABLED)
                     or not config.get_bool(KEY_RAVEN_REPORTING)):
@@ -488,12 +524,16 @@ def _raven_queue_reporting(commander, system, entry):
                 client = module.RavenClient(config.get_str(KEY_RAVEN_KEY) or "")
                 result = module.report_live_event(client, cmdr, dock_market, sysname, journal)
                 if result == "sent":
-                    _raven_refresh(cmdr, force=True)
+                    needs_refresh = True
             except Exception:
                 with _raven_lock:
                     if _raven_report_owner == cmdr.casefold():
                         _raven_report_error = "Raven report uncertain or failed. Check Raven inventory and progress; no automatic replay."
                     _raven_depot_signature = None
+                    _raven_preview = None
+                needs_refresh = True
+        if followup:
+            _raven_refresh(last_cmdr, force=True)
 
     threading.Thread(target=worker, name="MongrelRavenReporting", daemon=True).start()
 
@@ -511,7 +551,7 @@ def _raven_snapshot(state):
         result["refreshing"] = _raven_refreshing
         if _raven_owner != commander.casefold():
             return result
-        data = _raven_cache
+        data = _raven_preview if _raven_preview is not None else _raven_cache
         result["error"] = _raven_error
         result["reportError"] = _raven_report_error if _raven_report_owner == commander.casefold() else ""
         result["reportingEnabled"] = bool(config.get_bool(KEY_RAVEN_REPORTING) and config.get_str(KEY_RAVEN_KEY))
