@@ -315,14 +315,13 @@ def commodity_label(key, info=None):
     if isinstance(info, dict):
         live_name = str(info.get("name") or "").strip()
         live_category = str(info.get("category") or "").strip()
-        # A real localized display label may differ in capitalization. Reject
-        # internal symbols and alternate spellings for known English names.
-        if live_name and commodity_key(live_name) == commodity_key(name) and live_name.casefold() == name.casefold():
+        # Do not let a raw lowercase journal symbol undo the canonical
+        # name. A verified live label may supply a capitalization variant.
+        if live_name and live_name.casefold() == name.casefold() and not live_name.islower():
             name = live_name
-        elif key not in LABELS and live_name and commodity_key(live_name) != key:
-            name = live_name
-        elif key not in LABELS and live_name and re.search(r"[\\s.-]", live_name):
-            name = live_name
+        elif key not in LABELS and live_name and not live_name.startswith("$") and not live_name.lower().endswith("_name;"):
+            if re.search(r"[\s.-]", live_name) or (live_name[0].isupper() and live_name[1:].islower()):
+                name = live_name
         if key not in LABELS and live_category and not live_category.startswith("$"):
             category = live_category
     return category, name
