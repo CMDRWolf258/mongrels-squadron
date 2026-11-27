@@ -3644,7 +3644,7 @@ def _reconcile_ship_cargo_ghosts(
 def _hud_ship_transfer_inventory(
     cmdr: Any, state: Mapping[str, Any], entry: Mapping[str, Any],
 ) -> Optional[list[dict[str, Any]]]:
-    """Apply confirmed ship/SRV transfers immediately, even if CargoJSON is stale.
+    """Apply confirmed ship cargo events immediately, even if CargoJSON is stale.
 
     EDMC mutates state["Cargo"] on SRV pickup and transfer, but CargoJSON may
     remain the *previous* ship inventory until the SRV is boarded. The journal
@@ -3654,14 +3654,31 @@ def _hud_ship_transfer_inventory(
     """
     commander = _cmdr_cache_key(cmdr)
     kind = str(entry.get("event") or "")
-    if kind == "Cargo" and str(entry.get("Vessel") or "").casefold() == "ship":
+    if kind in {"LoadGame", "ShipyardSwap", "ShipyardNew", "ShipyardBuy"}:
         with _hud_condition:
             _hud_ship_transfer_rows.pop(commander, None)
+            _mission_sync_cargo_source.pop(commander, None)
         return None
+    if kind == "Cargo" and str(entry.get("Vessel") or "").casefold() == "ship":
+        with _hud_condition:
+            pending = _hud_ship_transfer_rows.get(commander)
+            if isinstance(entry.get("Inventory"), list) or _optional_int(entry.get("Count")) == 0:
+                _hud_ship_transfer_rows.pop(commander, None)
+                return [] if _optional_int(entry.get("Count")) == 0 and not isinstance(entry.get("Inventory"), list) else None
+            cargo_json = state.get("CargoJSON")
+            if (isinstance(cargo_json, Mapping) and isinstance(cargo_json.get("Inventory"), list)
+                    and entry.get("timestamp") and cargo_json.get("timestamp") == entry.get("timestamp")
+                    and str(cargo_json.get("Vessel") or "Ship").casefold() == "ship"):
+                _hud_ship_transfer_rows.pop(commander, None)
+                return None
+            return [dict(row) for row in pending] if pending is not None else None
 
     with _hud_condition:
         pending = _hud_ship_transfer_rows.get(commander)
-        if kind != "CargoTransfer":
+        delta_events = {"CargoTransfer", "MarketBuy", "MarketSell", "ColonisationContribution", "MiningRefined", "CollectCargo", "EjectCargo"}
+        if kind not in delta_events:
+            return [dict(row) for row in pending] if pending is not None else None
+        if kind in {"MiningRefined", "CollectCargo", "EjectCargo"} and _hud_srv_active(cmdr, entry):
             return [dict(row) for row in pending] if pending is not None else None
         # Use the *previously displayed ship cargo* as the pre-transfer total,
         # never the EDMC shared dictionary that can include SRV pickups.
@@ -3671,6 +3688,16 @@ def _hud_ship_transfer_inventory(
             displayed = None
         displayed = dict(displayed) if isinstance(displayed, Mapping) else None
         cached = [dict(row) for row in pending] if pending is not None else None
+        prior_source = _mission_sync_cargo_source.get(commander)
+        # For buys/sales/deliveries a known pre-event ship snapshot is required.
+        # Without one, EDMC may already have applied the event; do not guess.
+        if cached is None and kind != "CargoTransfer":
+            if isinstance(prior_source, Mapping):
+                vessel, prior = _cargo_inventory_from_edmc_state(prior_source)
+                if vessel.casefold() == "ship":
+                    cached = prior
+            if cached is None:
+                return None
 
     if cached is not None:
         previous = cached
@@ -3704,7 +3731,16 @@ def _hud_ship_transfer_inventory(
 
     changed = False
     localized: dict[str, str] = {}
-    for transfer in entry.get("Transfers") or []:
+    if kind == "CargoTransfer":
+        movements = entry.get("Transfers") or []
+    elif kind == "ColonisationContribution":
+        movements = [{"Type": row.get("Name"), "Count": row.get("Amount"), "Direction": "tocarrier"}
+                     for row in (entry.get("Contributions") or []) if isinstance(row, Mapping)]
+    else:
+        movements = [{"Type": entry.get("Type"), "Type_Localised": entry.get("Type_Localised"),
+                      "Count": entry.get("Count", 1 if kind in {"MiningRefined", "CollectCargo", "EjectCargo"} else None),
+                      "Direction": "toship" if kind in {"MarketBuy", "MiningRefined", "CollectCargo"} else "tocarrier"}]
+    for transfer in movements:
         if not isinstance(transfer, Mapping):
             continue
         key = _commodity_key(transfer.get("Type"))
