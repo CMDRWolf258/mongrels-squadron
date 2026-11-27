@@ -113,6 +113,14 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 .trade-route-choices{display:grid;gap:8px}.trade-route-choice{display:flex;align-items:center;gap:14px;min-height:60px;padding:10px;border:1px solid var(--line);border-radius:9px;background:#091820;color:var(--text);font-size:17px;font-weight:700}
 .trade-route-choice input{width:30px;height:30px;flex:none;accent-color:var(--accent)}.trade-route-choice span{overflow-wrap:anywhere}
 .trade-route-choice:has(input:disabled){opacity:.65}
+#ravenCartPanel .raven-control{display:grid;grid-template-columns: minmax(100px,1fr) minmax(0,2fr);gap:14px;align-items:center;margin:12px 0}
+#ravenCartPanel .raven-control label{margin:0;color:var(--text);font-size:1rem;font-weight:700}
+#ravenCartPanel .raven-control select{width:100%;min-width:0;min-height:58px;padding:12px 28px 12px 14px;border:1px solid var(--line);border-radius:10px;background:#07131a;color:var(--text);font-size:17px;font-weight:700}
+#ravenRefresh{width:100%;min-height:64px;font-size:17px;letter-spacing:.045em;border-color:var(--accent)}
+#ravenRefresh:disabled{opacity:.5}
+#ravenProjects input[type=checkbox]{width:auto;min-width:24px;min-height:24px;vertical-align:middle;margin-right:8px}
+#ravenStatus{overflow-wrap:anywhere}
+@media(max-width:520px){#ravenCartPanel .raven-control{grid-template-columns:1fr;gap:6px}}
 </style>
 </head>
 <body>
@@ -311,10 +319,10 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
   <section class="card" id="ravenCartPanel">
     <h2>COLONIZATION CART</h2>
     <div id="ravenStatus">Enable Raven Colonial in Mongrel Scout preferences.</div>
-    <div class="panel-control"><strong>Visibility</strong><select id="ravenMode"><option value="continuous">Continuous</option><option value="automatic">Automatic</option><option value="off">Off</option></select></div>
-    <div class="panel-control"><strong>Build selection</strong><select id="ravenSource"><option value="raven">Follow Raven</option><option value="manual">Manual selection</option></select></div>
+    <div class="raven-control"><label for="ravenMode">Visibility</label><select id="ravenMode"><option value="continuous">Continuous</option><option value="automatic">Automatic</option><option value="off">Off</option></select></div>
+    <div class="raven-control"><label for="ravenSource">Build selection</label><select id="ravenSource"><option value="raven">Follow Raven</option><option value="manual">Manual selection</option></select></div>
     <div id="ravenProjects"></div>
-    <button type="button" id="ravenRefresh">REFRESH RAVEN</button>
+    <button type="button" class="action" id="ravenRefresh">REFRESH RAVEN</button>
     <div id="ravenNotice" class="muted"></div>
     <div id="ravenSummary"></div>
   </section>
