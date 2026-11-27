@@ -259,8 +259,7 @@ def cart_view(snapshot, cargo, market=None, *, source="raven", selected=(), cons
         rows.sort(key=lambda r: r["name"].casefold())
     else:
         rows.sort(key=lambda r: (category_order.get(r["category"], 99), r["category"].casefold(),
-                                 r["marketOrder"] if isinstance(r["marketOrder"], int) else 1000000,
-                                 r["name"].casefold()))
+                                 r["name"].casefold(), r["key"]))
     remaining = sum(r["need"] for r in rows)
     collect = sum(r["toCollect"] for r in rows)
     incomplete_inventory = not hold_known or any(r["carrierUnknown"] for r in rows)
@@ -353,6 +352,39 @@ def reporting_request(projects, commander, dock_market, system, entry):
         return None
     body = {k: v for k, v in delta.items() if v}
     return ("PATCH", "/api/fc/" + dock_market + "/cargo", body) if body else None
+
+
+def preview_live_event(snapshot, commander, dock_market, system, entry):
+    """Display confirmed local journal changes before Raven's write/read round trip.
+
+    Copy only the affected project or known carrier inventory. The caller retains
+    the last server snapshot separately and reconciles with a fresh read after
+    reporting completes. This function never writes to Raven.
+    """
+    request = reporting_request(snapshot.get("projects", []), commander, dock_market, system, entry)
+    if request is None:
+        return snapshot
+    method, path, body = request
+    if path.startswith("/api/fc/") and path.endswith("/cargo"):
+        market = str(dock_market)
+        old = snapshot.get("stocks", {}).get(market)
+        if not isinstance(old, dict):
+            return snapshot
+        # An inconsistent or unknown starting stock must not become a made-up balance.
+        if any(old.get(key, 0) + delta < 0 for key, delta in body.items()):
+            return snapshot
+        stock = dict(old)
+        for key, delta in body.items():
+            stock[key] = stock.get(key, 0) + delta
+        return {**snapshot, "stocks": {**snapshot["stocks"], market: stock}}
+    if entry.get("event") == "ColonisationConstructionDepot":
+        project_id = body["buildId"]
+        projects = [{**p, "need": dict(body["commodities"])} if p["id"] == project_id else p
+                    for p in snapshot["projects"]]
+        return {**snapshot, "projects": projects}
+    # Contribution events update ship cargo immediately. The authoritative
+    # depot snapshot (not a guessed subtraction) supplies remaining build need.
+    return snapshot
 
 
 def report_live_event(client, commander, dock_market, system, entry, ledger_path=None):

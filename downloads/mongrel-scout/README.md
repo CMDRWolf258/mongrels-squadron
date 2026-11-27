@@ -1,3 +1,7 @@
+## Scout 1.14.9 — Responsive colonization cart
+
+Commodity names are alphabetical within their categories. Local journal-confirmed ship cargo changes are applied immediately, even when EDMC has an older CargoJSON snapshot. With Raven reporting enabled, known carrier movements and complete local depot snapshots are previewed locally, then reconciled with the authoritative Raven read after reporting. Background refresh stays at 45 seconds. HUD 0.18.18 is unchanged.
+
 ## Scout 1.14.8 — Raven refresh compatibility
 
 Uses Raven's canonical service address and hidden-project selection, tolerates missing carrier links and a retired primary selection, and provides sanitized failure-stage diagnostics. Update alongside HUD 0.18.16. Existing API key and settings are retained.

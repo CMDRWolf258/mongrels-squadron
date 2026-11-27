@@ -65,7 +65,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.14.8"
+assert plugin.PLUGIN_VERSION == "1.14.9"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -940,3 +940,39 @@ try:
 except raven.RavenSyncError as exc:
     assert str(exc) == "Active projects: HTTP 403"
 print("✓ Raven canonical service, hidden-build parity, nullable links and safe error diagnostics")
+
+# Alphabetical order must not depend on availability or market inventory order.
+ordered = {"projects":[raven.project_view({"buildId":"sort","commodities":{"steel":20,"titanium":10,"aluminium":5,"copper":6},"linkedFC":[]})],"primary":"","stocks":{}}
+market = {"steel":{"name":"Steel","category":"Metals","order":0,"supply":100},
+          "titanium":{"name":"Titanium","category":"Metals","order":1,"supply":100}}
+assert [r["name"] for r in raven.cart_view(ordered,cargo,market)["rows"]] == ["Aluminium","Copper","Steel","Titanium"]
+
+# Exact game-confirmed carrier and depot events are visible without another Raven read.
+base = {"projects":[raven.project_view(raw[0])],"primary":"","stocks":{"123":{"steel":120}}}
+event = {"event":"CargoTransfer","Transfers":[{"Type":"steel","Count":10,"Direction":"toship"}]}
+preview = raven.preview_live_event(base,"Wolf258","123","Diaba",event)
+assert preview["stocks"]["123"]["steel"] == 110
+assert base["stocks"]["123"]["steel"] == 120
+back = raven.preview_live_event(preview,"Wolf258","123","Diaba",{"event":"CargoTransfer","Transfers":[{"Type":"steel","Count":10,"Direction":"tocarrier"}]})
+assert back["stocks"]["123"]["steel"] == 120
+depot = {"event":"ColonisationConstructionDepot","MarketID":100,"ResourcesRequired":[{"Name":"steel","RequiredAmount":100,"ProvidedAmount":100},{"Name":"aluminium","RequiredAmount":20,"ProvidedAmount":0}]}
+preview = raven.preview_live_event(base,"Wolf258","100","Diaba",depot)
+assert raven.cart_view(preview,cargo)["remaining"] == 20
+assert base["projects"][0]["need"]["steel"] == 100
+
+# Purchases, sales and delivery immediately use the confirmed delta, not stale CargoJSON.
+pilot="Cargo Latency Pilot"
+plugin._hud_state["commander"]=pilot
+ship={"CargoCapacity":100,"CargoJSON":{"Vessel":"Ship","Inventory":[{"Name":"steel","Count":20}]},"Cargo":{"steel":20}}
+plugin._update_hud_cargo_from_edmc_state(pilot,ship,"2026-11-27T00:00:00Z",{"event":"Cargo","Vessel":"Ship","Inventory":ship["CargoJSON"]["Inventory"]})
+plugin._update_hud_cargo_from_edmc_state(pilot,ship,"2026-11-27T00:00:01Z",{"event":"MarketBuy","Type":"steel","Count":15})
+assert plugin._hud_state["cargo"]["used"]==35
+plugin._update_hud_cargo_from_edmc_state(pilot,ship,"2026-11-27T00:00:02Z",{"event":"MarketSell","Type":"steel","Count":5})
+assert plugin._hud_state["cargo"]["used"]==30
+plugin._update_hud_cargo_from_edmc_state(pilot,ship,"2026-11-27T00:00:03Z",{"event":"Cargo","Vessel":"Ship","Count":30})
+assert plugin._hud_state["cargo"]["used"]==30
+plugin._update_hud_cargo_from_edmc_state(pilot,ship,"2026-11-27T00:00:04Z",{"event":"ColonisationContribution","Contributions":[{"Name":"$steel_name;","Amount":30}]})
+assert plugin._hud_state["cargo"]["used"]==0
+plugin._update_hud_cargo_from_edmc_state(pilot,ship,"2026-11-27T00:00:05Z",{"event":"Cargo","Vessel":"Ship","Inventory":[]})
+assert plugin._hud_state["cargo"]["used"]==0
+print("✓ Alphabetical market groups, immediate local ship/carrier/depot updates, authoritative reconciliation")
