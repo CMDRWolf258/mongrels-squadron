@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.21 — Sourcing references and provider recovery
+
+Commodity Sourcing lists all active project systems available from Scout, supports a custom reference with Paste from PC, and offers Any report age (subject to provider retention). Search reference does not alter selected Raven material requirements. Ardent failures fall back to EDData with provider attribution and a clear 14-day provider limit. Errors distinguish failed lookups from successful empty results and report HTTP, DNS, connection and response problems. Scout 1.14.11 is unchanged.
+
 ## Mongrel HUD 0.18.20 — Commodity Sourcing
 
 Adds an iPad-only, on-demand Ardent Insight search below Colonization Logistics. Search current or selected project systems, all outstanding or a single material, with radius, landing pad and age filters. Group results by station, sort locally and copy systems to the PC clipboard. Nearby candidates are bounded and community-reported; missing or failed queries are disclosed. Direct PC requests and a five-minute in-memory cache avoid squad Cloudflare traffic. Scout 1.14.11 remains compatible.
