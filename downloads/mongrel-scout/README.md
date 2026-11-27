@@ -1,3 +1,7 @@
+## Scout 1.14.11 — Colonization Logistics commodity labels
+
+Updated the standard commodity reference to cover 270 known commodity symbols and their English market names, with aliases for journal symbols and display names. Fixes H.E. Suits, missing consumer items, surface materials, and incorrect categories. Unknown symbols without a verified label are marked unrecognized rather than displayed as raw internal keys. No change to quantities, reporting or refresh cadence. HUD 0.18.19 is unchanged.
+
 ## Scout 1.14.10 — Colonization Logistics
 
 The Raven integration now retains the exact facility build type alongside the facility name for both selected and available projects. The settings label is updated; existing preferences are preserved. Pair with HUD 0.18.19 for the new display.
