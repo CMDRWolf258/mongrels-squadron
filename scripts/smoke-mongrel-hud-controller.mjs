@@ -869,3 +869,19 @@ console.log("✓ Quiet background Raven refresh, manual-only feedback and stable
   assert.equal(h.node("sourcingSearch").disabled,false);
   assert.equal(h.requests.length,0);
 }
+
+{
+  const h=harness();
+  h.controller.setState({connected:true,scout:{system:{name:"Sol"},colonization:{enabled:true,projects:[{system:"Diaba"}],availableProjects:[{system:"Achenar"},{system:"Diaba"}],rows:[{key:"steel",name:"Steel",need:10}]}}});
+  h.controller.renderSourcingControls();
+  assert.match(h.node("sourcingSystem").innerHTML,/Achenar/);
+  assert.equal(h.node("sourcingSystem").value,"Diaba");
+  h.node("sourcingReference").value="custom";
+  h.node("sourcingCustomSystem").value="Shinrarta Dezhra";
+  h.controller.renderSourcingControls();
+  assert.equal(h.node("sourcingSearch").disabled,false);
+  assert.equal(h.node("sourcingCustomRow").style.display,"");
+  assert.equal(h.node("sourcingSystemRow").style.display,"none");
+  assert.match(html,/id="sourcingPaste"/);
+  assert.match(html,/<option value="0">Any<\/option>/);
+}
