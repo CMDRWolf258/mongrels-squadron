@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.16"
+assert hud.APP_VERSION=="0.18.17"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -102,12 +102,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.13"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.14"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.15"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.16"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.17"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.17"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.18"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.17",
+    "name":"Mongrel HUD Windows v0.18.18",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.17" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.18" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -698,7 +699,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.16"
+    assert hud.APP_VERSION=="0.18.17"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -896,3 +897,17 @@ assert '"miningCenters": []' in source
 assert 'nav.get("target") if isinstance(nav.get("target"), dict) else nav.get("site")' in source
 assert 'info["renderError"] = str(exc)[:160]' in source
 assert 'finally:' in source and 'self.root.after(200, self.refresh_ui)' in source
+
+# The cart retains its right edge regardless of live ship/carrier columns,
+# scale, hide/show, edit-mode width, or normalization after restarting.
+cart = hud.normalized_layout({"panels":{"colonization":{"x":4700,"y":100,"scale":1.0}}})["panels"]["colonization"]
+assert hud.colonization_panel_geometry(cart,300)==(4700,5000)
+cart["rightEdge"]=5000
+for width in (300,368,436,368,300,654,302):
+    x,edge=hud.colonization_panel_geometry(cart,width)
+    assert edge==5000 and x+width==5000
+saved=hud.normalized_layout({"panels":{"colonization":cart}})["panels"]["colonization"]
+assert saved["rightEdge"]==5000 and hud.colonization_panel_geometry(saved,436)==(4564,5000)
+assert "rightEdge" not in hud.normalized_layout({"panels":{"target":{"rightEdge":5000}}})["panels"]["target"]
+assert "rightEdge" not in hud.default_layout()["panels"]["colonization"]
+print("✓ Colonization cart right-edge anchoring, legacy migration and restart persistence")

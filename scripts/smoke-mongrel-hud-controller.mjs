@@ -59,7 +59,7 @@ function harness() {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -817,3 +817,33 @@ async function drain(h, expected) {
 }
 
 console.log('✓ Shipped HUD controller serializes controls, preserves assignments, recovers after errors and displays HTTP/cache/renderer diagnostics');
+
+// The automatic Raven poll never inserts a refresh notification or changes the project list.
+{
+  const h=harness();
+  const cart={enabled:true,reportingEnabled:true,updatedAt:"2026-11-27T05:00:00Z",projects:[{id:"a",name:"Build A"}],remaining:50};
+  const update=extra=>{h.controller.setState({connected:true,scout:{colonization:{...cart,...extra}}});h.controller.renderRavenCart()};
+  update({refreshing:false});
+  const rows=h.node("ravenProjects").innerHTML;
+  const status=h.node("ravenStatus").textContent;
+  update({refreshing:true});
+  assert.equal(h.node("ravenNotice").textContent,"");
+  assert.equal(h.node("ravenStatus").textContent,status);
+  assert.equal(h.node("ravenProjects").innerHTML,rows);
+  assert.equal(h.node("ravenRefresh").disabled,false);
+  update({updatedAt:"2026-11-27T05:01:00Z",refreshing:false});
+  assert.equal(h.node("ravenNotice").textContent,"");
+  h.controller.setRavenManualRefresh({before:cart.updatedAt,started:Date.now(),requested:true});
+  update({refreshing:true});
+  assert.equal(h.node("ravenRefresh").disabled,true);
+  update({updatedAt:"2026-11-27T05:01:00Z",refreshing:false});
+  assert.equal(h.node("ravenNotice").textContent,"Raven refreshed");
+  h.controller.expireRavenNotice();
+  update({updatedAt:"2026-11-27T05:01:00Z",refreshing:false});
+  assert.equal(h.node("ravenNotice").textContent,"");
+  update({error:"Network failed",stale:true});
+  assert.match(h.node("ravenStatus").textContent,/Network failed/);
+  assert.equal(h.node("ravenNotice").textContent,"");
+  assert.ok(html.indexOf('id="ravenSummary"')<html.indexOf('id="ravenNotice"'));
+}
+console.log("✓ Quiet background Raven refresh, manual-only feedback and stable list");

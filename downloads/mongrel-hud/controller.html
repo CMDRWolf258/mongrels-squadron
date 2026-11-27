@@ -119,7 +119,8 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 #ravenRefresh{width:100%;min-height:64px;font-size:17px;letter-spacing:.045em;border-color:var(--accent)}
 #ravenRefresh:disabled{opacity:.5}
 #ravenProjects input[type=checkbox]{width:auto;min-width:24px;min-height:24px;vertical-align:middle;margin-right:8px}
-#ravenStatus{overflow-wrap:anywhere}
+#ravenStatus{overflow-wrap:anywhere;margin-top:8px;font-size:.83rem}
+#ravenNotice{min-height:1.5em;margin-top:4px;overflow-wrap:anywhere;font-size:.85rem}
 @media(max-width:520px){#ravenCartPanel .raven-control{grid-template-columns:1fr;gap:6px}}
 </style>
 </head>
@@ -318,13 +319,13 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 
   <section class="card" id="ravenCartPanel">
     <h2>COLONIZATION CART</h2>
-    <div id="ravenStatus">Enable Raven Colonial in Mongrel Scout preferences.</div>
     <div class="raven-control"><label for="ravenMode">Visibility</label><select id="ravenMode"><option value="continuous">Continuous</option><option value="automatic">Automatic</option><option value="off">Off</option></select></div>
     <div class="raven-control"><label for="ravenSource">Build selection</label><select id="ravenSource"><option value="raven">Follow Raven</option><option value="manual">Manual selection</option></select></div>
     <div id="ravenProjects"></div>
     <button type="button" class="action" id="ravenRefresh">REFRESH RAVEN</button>
-    <div id="ravenNotice" class="muted"></div>
     <div id="ravenSummary"></div>
+    <div id="ravenStatus" class="muted">Enable Raven Colonial in Mongrel Scout preferences.</div>
+    <div id="ravenNotice" class="muted" role="status" aria-live="polite"></div>
   </section>
   <section id="navigationPanel" class="hidden">
   <p class="layout-hint">Copy a system name on your PC (Ctrl+C), then tap PASTE FROM PC beside a route field. The paired HUD reads the Windows clipboard only when tapped.</p>
@@ -1127,13 +1128,26 @@ async function surveyorAction(action,value){
   }catch(e){setText(el("surveyorExpeditionNotice"),"Surveyor command failed · "+e.message);}
 }
 
+var ravenManualRefresh=null,ravenManualNoticeUntil=0;
 function renderRavenCart(){
   var cart=(state&&state.scout&&state.scout.colonization)||{}, enabled=!!cart.enabled;
-  var status=!enabled?"Enable Raven Colonial in Mongrel Scout preferences.":cart.refreshing?"Refreshing Raven…":cart.error?(cart.stale?"Stale · ":"")+cart.error:cart.updatedAt?"Last synced · "+new Date(cart.updatedAt).toLocaleTimeString():"Waiting for commander / Raven";
-  setText(el("ravenStatus"),status+(cart.reportError?" · "+cart.reportError:enabled?(cart.reportingEnabled?" · Reporting ON":" · Read only"):""));
+  // Automatic polling stays silent. A persistent warning is not a refresh notification.
+  var status=!enabled?"Enable Raven Colonial in Mongrel Scout preferences.":cart.error?(cart.stale?"Stale · ":"")+cart.error:cart.updatedAt?(cart.reportingEnabled?"Reporting ON":"Read only"):"Waiting for commander / Raven";
+  setText(el("ravenStatus"),status+(cart.reportError?" · "+cart.reportError:""));
+  if(ravenManualRefresh&&ravenManualRefresh.requested&&!cart.refreshing&&(cart.error||cart.updatedAt!==ravenManualRefresh.before&&cart.updatedAt)){
+    setText(el("ravenNotice"),cart.error?"Refresh failed · "+cart.error:"Raven refreshed");
+    ravenManualRefresh=null;
+    ravenManualNoticeUntil=Date.now()+5000;
+  }
+  if(ravenManualRefresh&&Date.now()-ravenManualRefresh.started>120000){
+    setText(el("ravenNotice"),"Refresh not confirmed · check Raven status");
+    ravenManualRefresh=null;
+    ravenManualNoticeUntil=Date.now()+5000;
+  }
+  if(!ravenManualRefresh&&ravenManualNoticeUntil&&Date.now()>=ravenManualNoticeUntil){setText(el("ravenNotice"),"");ravenManualNoticeUntil=0}
   el("ravenMode").value=cart.mode||"continuous";
   el("ravenSource").value=cart.source||"raven";
-  ["ravenMode","ravenSource","ravenRefresh"].forEach(function(id){el(id).disabled=!enabled||!state.connected||(id==="ravenRefresh"&&cart.refreshing)});
+  ["ravenMode","ravenSource","ravenRefresh"].forEach(function(id){el(id).disabled=!enabled||!state.connected||(id==="ravenRefresh"&&!!ravenManualRefresh)});
   var projects=el("ravenProjects"), selected=(cart.projects||[]).map(function(p){return p.id});
   var rows=cart.source==="manual"?(cart.availableProjects||[]):(cart.projects||[]);
   var html=rows.map(function(p){return '<div><label>'+(cart.source==="manual"?'<input type="checkbox" data-raven-project="'+escapeHtml(p.id)+'" '+(selected.includes(p.id)?"checked":"")+' '+(!enabled?"disabled":"")+'> ':'')+escapeHtml(p.name||p.id)+(p.system?" · "+escapeHtml(p.system):"")+'</label></div>'}).join("");
@@ -1142,12 +1156,25 @@ function renderRavenCart(){
   setText(el("ravenSummary"),enabled&&cart.remaining!=null?"Remaining "+amount(cart.remaining)+" t · Collection trips "+amount(cart.collectionTrips)+" · Delivery trips "+amount(cart.deliveryTrips):"");
 }
 async function ravenAction(body){
+  var manual=body.action==="refresh";
+  if(manual){
+    if(ravenManualRefresh)return;
+    var cart=(state&&state.scout&&state.scout.colonization)||{};
+    ravenManualRefresh={before:cart.updatedAt,started:Date.now(),requested:false};ravenManualNoticeUntil=0;
+    setText(el("ravenNotice"),"Refreshing Raven…");
+    renderRavenCart();
+  }
   try{
     var response=await mutate("/api/colonization",body);
+    if(manual&&ravenManualRefresh)ravenManualRefresh.requested=true;
     if(response&&response.colonization&&state&&state.scout){state.scout.colonization=response.colonization;renderRavenCart()}
-    setText(el("ravenNotice"),body.action==="refresh"?"Refresh requested":"Settings saved");
     await load(true);
-  }catch(e){setText(el("ravenNotice"),"Raven control failed · "+e.message)}
+  }catch(e){
+    if(manual)ravenManualRefresh=null;
+    ravenManualNoticeUntil=Date.now()+5000;
+    setText(el("ravenNotice"),"Raven control failed · "+e.message);
+    renderRavenCart();
+  }
 }
 function render(){
   if(!state)return;

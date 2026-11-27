@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.16"
+APP_VERSION = "0.18.17"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -870,8 +870,19 @@ def normalized_layout(value: Any) -> dict[str, Any]:
             "scale": max(0.75, min(1.5, scale)),
             "profiles": profiles,
         }
+        # Legacy layouts retain their saved left position until the first
+        # successful cart render initializes the persistent right edge.
+        if panel_id == "colonization" and type(raw.get("rightEdge")) is int:
+            out["panels"][panel_id]["rightEdge"] = raw["rightEdge"]
     return out
 
+
+def colonization_panel_geometry(panel: dict[str, Any], width: int) -> tuple[int, int]:
+    """Return left coordinate and persistent right edge for the cart only."""
+    edge = panel.get("rightEdge")
+    if type(edge) is not int:
+        edge = int(panel["x"]) + width
+    return edge - width, edge
 
 
 def resource_path(name: str) -> Path:
@@ -4409,13 +4420,15 @@ class MongrelHudApp:
             self.layout_revision += 1
         return self.layout_snapshot()
 
-    def save_panel_position(self, panel_id: str, x: int, y: int) -> None:
+    def save_panel_position(self, panel_id: str, x: int, y: int, *, right_edge: int | None = None) -> None:
         if panel_id not in PANEL_IDS:
             return
         with self.store.lock:
             layout = normalized_layout(self.store.data.get("layout"))
             layout["panels"][panel_id]["x"] = int(x)
             layout["panels"][panel_id]["y"] = int(y)
+            if panel_id == "colonization" and right_edge is not None:
+                layout["panels"][panel_id]["rightEdge"] = int(right_edge)
             self.store.data["layout"] = layout
             self.store.save()
 
@@ -6957,8 +6970,6 @@ class MongrelHudApp:
         projects = data.get("projects") or []
         for project in projects:
             line(self.clip_line(project.get("name") or project.get("id"), 48), HUD_CYAN, True)
-        if data.get("refreshing"):
-            line("Refreshing Raven...", HUD_MUTED)
         if data.get("stale") or not self.snapshot.connected:
             line("STALE DATA · check Raven / Scout", HUD_AMBER)
         elif data.get("error"):
@@ -8180,7 +8191,25 @@ class MongrelHudApp:
                         info["appliedLocked"] = locked
                     except Exception:
                         pass
-                if info.get("appliedRevision") != revision:
+                if panel_id == "colonization" and not info.get("dragOffset") and not info.get("renderError"):
+                    try:
+                        # Canvas requested width is available immediately after
+                        # rendering, unlike winfo_width (which can lag a frame).
+                        width = int(float(info["body"].cget("width")))
+                        if not locked:
+                            width = max(width, info["header"].winfo_reqwidth()) + 2
+                        x, right_edge = colonization_panel_geometry(panel_cfg, width)
+                        y = int(panel_cfg["y"])
+                        if "rightEdge" not in panel_cfg:
+                            self.save_panel_position(panel_id, x, y, right_edge=right_edge)
+                        target = (x, y, width)
+                        if info.get("appliedCartGeometry") != target or info.get("appliedRevision") != revision:
+                            window.geometry(f"+{x}+{y}")
+                            info["appliedCartGeometry"] = target
+                            info["appliedRevision"] = revision
+                    except Exception:
+                        pass
+                elif panel_id != "colonization" and info.get("appliedRevision") != revision:
                     try:
                         window.geometry(f"+{int(panel_cfg['x'])}+{int(panel_cfg['y'])}")
                         info["appliedRevision"] = revision
@@ -8267,7 +8296,13 @@ class MongrelHudApp:
         if not info:
             return
         window = info["window"]
-        self.save_panel_position(panel_id, window.winfo_x(), window.winfo_y())
+        if panel_id == "colonization":
+            # A drag deliberately moves the anchor; ordinary cargo changes do not.
+            self.save_panel_position(panel_id, window.winfo_x(), window.winfo_y(),
+                                     right_edge=window.winfo_x() + window.winfo_width())
+            info["appliedCartGeometry"] = None
+        else:
+            self.save_panel_position(panel_id, window.winfo_x(), window.winfo_y())
         info["dragOffset"] = None
 
     def _create_panel_window(self, panel_id: str) -> None:
