@@ -70,6 +70,7 @@ def project_view(raw):
         if market not in carriers:
             carriers.append(market)
     return {"id": raw["buildId"], "name": str(raw.get("buildName") or raw["buildId"]),
+            "buildType": str(raw.get("buildType") or "").strip(),
             "system": str(raw.get("systemName") or ""), "marketId": str(raw.get("marketId") or ""),
             "complete": raw.get("complete") is True, "need": cargo_map(raw.get("commodities")),
             "carriers": carriers}
@@ -266,8 +267,8 @@ def cart_view(snapshot, cargo, market=None, *, source="raven", selected=(), cons
     cap = cargo.get("capacity") if isinstance(cargo, dict) else None
     capacity = cap if type(cap) is int and cap > 0 else None
     trips = lambda n: (n + capacity - 1) // capacity if capacity else (0 if n == 0 else None)
-    return {"projects": [{"id": p["id"], "name": p["name"], "system": p["system"]} for p in projects],
-            "availableProjects": [{"id": p["id"], "name": p["name"], "system": p["system"]} for p in snapshot.get("projects", [])],
+    return {"projects": [{"id": p["id"], "name": p["name"], "buildType": p.get("buildType", ""), "system": p["system"]} for p in projects],
+            "availableProjects": [{"id": p["id"], "name": p["name"], "buildType": p.get("buildType", ""), "system": p["system"]} for p in snapshot.get("projects", [])],
             "primary": primary, "rows": rows, "showShip": any((r["ship"] or 0) > 0 for r in rows),
             "showCarrier": show_fc, "remaining": remaining, "toCollect": None if incomplete_inventory else collect,
             "collectionTrips": None if incomplete_inventory else trips(collect), "deliveryTrips": trips(remaining),

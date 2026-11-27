@@ -25,7 +25,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.14.9"
+PLUGIN_VERSION = "1.14.10"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -572,7 +572,7 @@ def _raven_snapshot(state):
         result["autoVisible"] = construction or (market is not None and focus in (None, 5))
         result["connected"] = not bool(result["error"])
     except Exception:
-        result["error"] = "Unable to calculate construction cart from available data."
+        result["error"] = "Unable to calculate colonization logistics from available data."
         result["stale"] = True
     return result
 
@@ -1123,7 +1123,7 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         variable=_survey_intel_var,
     ).grid(row=6, column=0, columnspan=2, sticky=tk.W, pady=(8, 0))
 
-    nb.Checkbutton(frame, text="Enable Raven Colonial construction cart", variable=_raven_enabled_var).grid(row=7, column=0, columnspan=2, sticky=tk.W, pady=(8, 0))
+    nb.Checkbutton(frame, text="Enable Raven Colonial logistics", variable=_raven_enabled_var).grid(row=7, column=0, columnspan=2, sticky=tk.W, pady=(8, 0))
     nb.Label(frame, text="Raven API key").grid(row=8, column=0, sticky=tk.W)
     tk.Entry(frame, textvariable=_raven_key_var, show="•", width=52).grid(row=8, column=1, sticky=tk.EW, padx=(8, 0))
     nb.Label(frame, text="Opt-in: Raven receives your commander name for project lookups. Your key stays on this PC.", wraplength=520, justify=tk.LEFT).grid(row=9, column=0, columnspan=2, sticky=tk.W)

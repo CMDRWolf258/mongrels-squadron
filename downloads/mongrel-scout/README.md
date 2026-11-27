@@ -1,3 +1,7 @@
+## Scout 1.14.10 — Colonization Logistics
+
+The Raven integration now retains the exact facility build type alongside the facility name for both selected and available projects. The settings label is updated; existing preferences are preserved. Pair with HUD 0.18.19 for the new display.
+
 ## Scout 1.14.9 — Responsive colonization cart
 
 Commodity names are alphabetical within their categories. Local journal-confirmed ship cargo changes are applied immediately, even when EDMC has an older CargoJSON snapshot. With Raven reporting enabled, known carrier movements and complete local depot snapshots are previewed locally, then reconciled with the authoritative Raven read after reporting. Background refresh stays at 45 seconds. HUD 0.18.18 is unchanged.

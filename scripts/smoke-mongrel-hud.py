@@ -65,7 +65,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.14.9"
+assert plugin.PLUGIN_VERSION == "1.14.10"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -976,3 +976,12 @@ assert plugin._hud_state["cargo"]["used"]==0
 plugin._update_hud_cargo_from_edmc_state(pilot,ship,"2026-11-27T00:00:05Z",{"event":"Cargo","Vessel":"Ship","Inventory":[]})
 assert plugin._hud_state["cargo"]["used"]==0
 print("✓ Alphabetical market groups, immediate local ship/carrier/depot updates, authoritative reconciliation")
+
+# Raven buildType survives both selection paths without guessing unknown types.
+facility = raven.project_view({"buildId":"typed","buildName":"Hayden Vision","buildType":"eupraxia","commodities":{"steel":5}})
+assert facility["buildType"] == "eupraxia"
+view = raven.cart_view({"projects":[facility],"primary":"typed","stocks":{}},cargo)
+assert view["projects"][0]["buildType"] == "eupraxia"
+assert view["availableProjects"][0]["buildType"] == "eupraxia"
+assert raven.project_view({"buildId":"unknown","commodities":{}})["buildType"] == ""
+print("✓ Raven facility type retained in selected and available projects")

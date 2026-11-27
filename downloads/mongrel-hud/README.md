@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.19 — Colonization Logistics
+
+Renames Colonization Cart to Colonization Logistics and displays facility names followed by their Raven build type in parentheses. The overlay measures complete labels to avoid truncation and retains its right edge. Pair with Scout 1.14.10 for the type data.
+
 ## Mongrel HUD 0.18.18 — Stable colonization warning footer
 
 Stale data, Raven connection errors, and uncertain reporting warnings now occupy two permanently reserved rows below the construction cart totals. These warnings cannot shift the commodity rows or resize the overlay when they appear or clear. The paired iPad already shows warnings below its project list. Scout 1.14.8 is unchanged.
