@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.17"
+APP_VERSION = "0.18.18"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -6970,15 +6970,26 @@ class MongrelHudApp:
         projects = data.get("projects") or []
         for project in projects:
             line(self.clip_line(project.get("name") or project.get("id"), 48), HUD_CYAN, True)
-        if data.get("stale") or not self.snapshot.connected:
-            line("STALE DATA · check Raven / Scout", HUD_AMBER)
-        elif data.get("error"):
-            line(self.clip_line(data.get("error"), 48), HUD_AMBER)
-        if data.get("reportError"):
-            line("RAVEN REPORT UNCERTAIN · CHECK RAVEN", HUD_AMBER)
+        def warning_footer():
+            # Reserve both warning rows even when healthy. Nothing above
+            # them moves when either warning appears or clears.
+            nonlocal y
+            y += 5 * scale
+            if data.get("stale") or not self.snapshot.connected:
+                line("STALE DATA · check Raven / Scout", HUD_AMBER)
+            elif data.get("error"):
+                line(self.clip_line(data.get("error"), 48), HUD_AMBER)
+            else:
+                y += step
+            if data.get("reportError"):
+                line("RAVEN REPORT UNCERTAIN · CHECK RAVEN", HUD_AMBER)
+            else:
+                y += step
+
         rows = data.get("rows") or []
         if not rows:
             line("All materials delivered" if projects else "No selected Raven projects", HUD_GREEN if projects else HUD_MUTED)
+            warning_footer()
             return width, int(y + pad)
         cols = [("need", "NEED")]
         if ship:
@@ -7009,6 +7020,7 @@ class MongrelHudApp:
         line("Remaining: " + amount("remaining") + " t", HUD_WHITE, True)
         line("Collection trips: " + amount("collectionTrips"), HUD_CYAN)
         line("Delivery trips: " + amount("deliveryTrips"), HUD_CYAN)
+        warning_footer()
         return width, int(y + pad)
 
     def _render_cargo_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
