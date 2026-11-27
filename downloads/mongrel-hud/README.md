@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.25 — Dim unavailable commodities
+
+Colonization Logistics now uses a dedicated dark neutral gray for explicitly unavailable commodity rows, including all displayed quantities. Available and unknown commodities, fulfilled rows, headings and other HUD panels retain their existing colors. Scout is unchanged.
+
 ## Mongrel HUD 0.18.24 — Minimum-stop commodity collection
 
 Commodity Sourcing recommends the smallest verified station set among returned market candidates, accounting for required tonnage and split supply; bounded searches explicitly identify when optimality is not proven. The collection section shows allocated quantities and any unavailable stock, followed by separately sorted alternative stations. Distances round upward to whole light-seconds and two decimal places for light-years. Scout is unchanged.
