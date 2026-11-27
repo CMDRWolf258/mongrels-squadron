@@ -343,7 +343,7 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 
   <section class="card" id="commoditySourcingPanel">
     <h2>COMMODITY SOURCING</h2>
-    <p class="layout-hint">Find stations selling required construction materials. Searches run only when requested. Community market reports are not live stock guarantees.</p>
+    <p class="layout-hint">Find stations selling required construction materials. Searches run only when requested. Community market reports are not live stock guarantees. Price and supply sorting compares returned nearby candidates, not every market in the galaxy.</p>
     <div class="raven-control"><label for="sourcingReference">Search from</label><select id="sourcingReference"><option value="project">Construction system</option><option value="current">Current system</option></select></div>
     <div class="raven-control" id="sourcingSystemRow"><label for="sourcingSystem">Construction system</label><select id="sourcingSystem"></select></div>
     <div class="raven-control"><label for="sourcingCommodity">Material</label><select id="sourcingCommodity"><option value="all">All outstanding materials</option></select></div>
@@ -1224,7 +1224,7 @@ function renderSourcingControls(){
   sourcingOptions(el("sourcingSystem"),systems.map(function(n){return [n,n]}));
   var materials=(cart.rows||[]).filter(function(r){return r.need>0}).slice().sort(function(a,b){return a.name.localeCompare(b.name)});
   sourcingOptions(el("sourcingCommodity"),[["all","All outstanding materials"]].concat(materials.map(function(r){return [r.key,r.name]})));
-  el("sourcingSystemRow").classList.toggle("hidden",el("sourcingReference").value==="current");
+  el("sourcingSystemRow").style.display=el("sourcingReference").value==="current"?"none":"";
   var ship=String((scout.ship||{}).type||"").toLowerCase();
   if(ship&&ship!==sourcingShip){
     sourcingShip=ship;
@@ -1249,7 +1249,7 @@ function renderSourcingResults(){
   var total=Object.keys(req.needs||{}).length;
   var prefix=rows.length?rows.length+" matching stations near "+req.system:"No matching stations found near "+req.system;
   var errors=r.failedQueries||[];
-  setText(el("sourcingStatus"),prefix+" · "+total+" materials"+(req.provisional?" · Inventory uncertain; requirements may be overstated":"")+(errors.length?" · Partial results: "+errors.length+" queries failed":"")+(r.status==="failed"?" · Market service unavailable":""));
+  setText(el("sourcingStatus"),prefix+" · "+total+" materials · "+req.radius+" LY radius · reports ≤ "+req.days+" days"+(req.provisional?" · Inventory uncertain; requirements may be overstated":"")+(errors.length?" · Partial results: "+errors.length+" queries failed":"")+(r.status==="failed"?" · Market service unavailable":""));
   el("sourcingResults").innerHTML=rows.slice(0,20).map(function(p){
     var materials=p.materials.map(function(m){return '<div class="sourcing-material"><span>'+escapeHtml(m.name)+'</span><span>'+n(m.need)+'</span><span>'+n(m.stock)+'</span><span>'+n(m.price)+'</span></div>'}).join("");
     return '<article class="sourcing-station"><h3>'+escapeHtml(p.station)+'</h3><div>'+escapeHtml(p.system)+' · '+n(p.distance)+' LY · '+n(p.arrival)+' Ls</div><p class="layout-hint">'+(["","Small","Medium","Large"][p.pad]||"Unknown")+' pad · oldest listed report '+sourcingAge(p.updatedAt)+' · '+p.matched+'/'+total+' materials · '+n(p.covered)+' t of requirements available</p><div class="sourcing-material muted"><span>Commodity</span><span>Need</span><span>Supply</span><span>Cr/t</span></div>'+materials+'<button type="button" class="action sourcing-copy" data-sourcing-copy="'+escapeAttr(p.system)+'">COPY SYSTEM TO PC</button></article>';
