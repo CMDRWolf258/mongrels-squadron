@@ -59,7 +59,7 @@ function harness() {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -857,4 +857,15 @@ console.log("✓ Quiet background Raven refresh, manual-only feedback and stable
     assert.match(h.node("ravenProjects").innerHTML,/Hayden Vision \(eupraxia\)/);
   }
   assert.ok(html.includes("COLONIZATION LOGISTICS"));
+}
+
+{
+  const h=harness();
+  h.controller.setState({connected:true,scout:{ship:{type:"Panther Clipper Mk II"},colonization:{enabled:true,projects:[{system:"Diaba"}],rows:[{key:"steel",name:"Steel",need:10}]}}});
+  h.controller.renderSourcingControls();
+  assert.equal(h.node("sourcingSystem").value,"Diaba");
+  assert.match(h.node("sourcingCommodity").innerHTML,/Steel/);
+  assert.equal(h.node("sourcingPad").value,"3");
+  assert.equal(h.node("sourcingSearch").disabled,false);
+  assert.equal(h.requests.length,0);
 }

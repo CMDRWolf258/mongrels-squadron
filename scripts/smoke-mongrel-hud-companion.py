@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.19"
+assert hud.APP_VERSION=="0.18.20"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -105,12 +105,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.16"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.17"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.18"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.19"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.20"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.20"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.21"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.20",
+    "name":"Mongrel HUD Windows v0.18.21",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.20" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.21" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -701,7 +702,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.19"
+    assert hud.APP_VERSION=="0.18.20"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -946,3 +947,19 @@ size,drawn=render_cart_warnings({"projects":[{"name":"A long construction facili
 assert any(text==long_label for _,_,text in drawn)
 assert size[0]>=len(long_label)*9+24+136
 assert hud.PANEL_TITLES["colonization"]=="COLONIZATION LOGISTICS"
+
+# On-demand sourcing: known inventory reduces needs; unknown inventory is flagged.
+sourcing_state={"system":{"name":"Sol"},"colonization":{"enabled":True,"projects":[{"system":"Diaba"}],"holdKnown":True,"rows":[{"key":"steel","name":"Steel","need":100,"toCollect":80},{"key":"water","name":"Water","need":20,"toCollect":10},{"key":"gold","name":"Gold","need":20,"toCollect":0}]}}
+req=hud.sourcing_request(sourcing_state,{"reference":"project","system":"Diaba","radius":50,"pad":3,"days":7})
+assert req["system"]=="Diaba" and req["needs"]=={"steel":{"name":"Steel","quantity":80},"water":{"name":"Water","quantity":10}}
+assert hud.sourcing_request(sourcing_state,{"reference":"current","commodity":"gold"})["needs"]["gold"]["quantity"]==20
+assert hud.sourcing_request(sourcing_state,{"reference":"current"})["system"]=="Sol"
+stamp=hud.datetime.now(hud.timezone.utc).isoformat()
+base={"marketId":123,"stationName":"Example Port","systemName":"Diaba","stationType":"Coriolis","maxLandingPadSize":3,"distanceToArrival":150,"stock":100,"buyPrice":3000,"updatedAt":stamp,"commodityName":"steel"}
+rows=hud.aggregate_sourcing(req,[([base,{**base,"commodityName":"water","stock":5,"buyPrice":100}],True),([dict(base,marketId=124,systemName="Sol",distance=10,maxLandingPadSize=2),dict(base,marketId=125,stationType="FleetCarrier",distance=5),dict(base,marketId=126,distance=60)],False)])
+assert len(rows)==1 and rows[0]["matched"]==2 and rows[0]["covered"]==85 and rows[0]["distance"]==0
+assert rows[0]["cost"]==240500
+assert len(rows[0]["materials"])==2
+assert hud.aggregate_sourcing(req,[([dict(base,updatedAt="2000-01-01T00:00:00Z")],True)])==[]
+assert hud.aggregate_sourcing(req,[([dict(base,maxLandingPadSize=None)],True)])==[]
+print("✓ Commodity sourcing filters and station grouping")
