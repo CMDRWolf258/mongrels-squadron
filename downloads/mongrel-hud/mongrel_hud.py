@@ -4719,7 +4719,8 @@ class MongrelHudApp:
                     if time.monotonic() >= deadline or consecutive_errors >= 2:
                         errors.extend(jobs[index:])
                         break
-                    cache_key = ("Spansh", json.dumps(spansh_sourcing_payload(request, key), sort_keys=True))
+                    cache_key = ("Spansh", json.dumps(spansh_sourcing_payload(request, key), sort_keys=True),
+                                 tuple(sorted((k, v["name"]) for k, v in request["needs"].items())))
                     try:
                         cached = self.sourcing_cache.get(cache_key)
                         if cached and time.monotonic() - cached[0] < SOURCING_TTL:
