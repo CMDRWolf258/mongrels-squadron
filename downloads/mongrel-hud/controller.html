@@ -1122,7 +1122,7 @@ async function surveyorAction(action,value){
 function renderRavenCart(){
   var cart=(state&&state.scout&&state.scout.colonization)||{}, enabled=!!cart.enabled;
   var status=!enabled?"Enable Raven Colonial in Mongrel Scout preferences.":cart.refreshing?"Refreshing Raven…":cart.error?(cart.stale?"Stale · ":"")+cart.error:cart.updatedAt?"Last synced · "+new Date(cart.updatedAt).toLocaleTimeString():"Waiting for commander / Raven";
-  setText(el("ravenStatus"),status);
+  setText(el("ravenStatus"),status+(cart.reportError?" · "+cart.reportError:enabled?(cart.reportingEnabled?" · Reporting ON":" · Read only"):""));
   el("ravenMode").value=cart.mode||"continuous";
   el("ravenSource").value=cart.source||"raven";
   ["ravenMode","ravenSource","ravenRefresh"].forEach(function(id){el(id).disabled=!enabled||!state.connected||(id==="ravenRefresh"&&cart.refreshing)});
