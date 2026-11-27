@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.18"
+assert hud.APP_VERSION=="0.18.19"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -104,12 +104,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.15"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.16"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.17"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.18"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.19"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.19"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.20"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.19",
+    "name":"Mongrel HUD Windows v0.18.20",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.19" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.20" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -700,7 +701,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.18"
+    assert hud.APP_VERSION=="0.18.19"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -921,9 +922,11 @@ def render_cart_warnings(extra, connected=True, rows=True):
     drawn=[]
     app=types.SimpleNamespace(snapshot=types.SimpleNamespace(data={"colonization":data},connected=connected),
         _draw_title=lambda *args: 25,
+        _panel_font=hud.MongrelHudApp._panel_font,
         _draw_text=lambda canvas,x,y,text,*args,**kwargs: drawn.append((x,y,text)),
         clip_line=lambda text,n:str(text)[:n])
-    size=hud.MongrelHudApp._render_colonization_canvas(app,None,1.0)
+    canvas=types.SimpleNamespace(create_text=lambda *args,**kwargs: len(kwargs["text"]),bbox=lambda item:(0,0,item*9,15),delete=lambda item:None)
+    size=hud.MongrelHudApp._render_colonization_canvas(app,canvas,1.0)
     return size,drawn
 for have_rows in (True,False):
     size,base=render_cart_warnings({},rows=have_rows)
@@ -934,3 +937,12 @@ for have_rows in (True,False):
         assert len(drawn)>len(base)
         assert all(y>base[-1][1] for _,y,_ in drawn[len(base):])
 print("✓ Colonization warning footer preserves every commodity coordinate and canvas size")
+
+size,drawn=render_cart_warnings({"projects":[{"name":"Hayden Vision","buildType":"eupraxia"}]})
+assert any(text=="Hayden Vision (eupraxia)" for _,_,text in drawn)
+assert any(text=="Build A" for _,_,text in render_cart_warnings({})[1])
+long_label="A long construction facility name that still fits (Coriolis)"
+size,drawn=render_cart_warnings({"projects":[{"name":"A long construction facility name that still fits","buildType":"Coriolis"}]})
+assert any(text==long_label for _,_,text in drawn)
+assert size[0]>=len(long_label)*9+24+136
+assert hud.PANEL_TITLES["colonization"]=="COLONIZATION LOGISTICS"
