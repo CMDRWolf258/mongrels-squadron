@@ -30,7 +30,7 @@ from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, quote, urlencode
 
 
 try:
@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.19"
+APP_VERSION = "0.18.20"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1721,6 +1721,139 @@ class ScoutSnapshot:
     error: str = ""
 
 
+
+# Read-only sourcing requests travel directly from the PC to Ardent, not the
+# squad site. The source endpoint excludes the reference system from nearby
+# searches, so query its complete export list once as well.
+ARDENT_ROOT = "https://api.ardent-insight.com/v2"
+SOURCING_TTL = 300
+SOURCING_MAX_MATERIALS = 40
+
+def sourcing_request(state, body):
+    cart = state.get("colonization") or {}
+    if not cart.get("enabled") or not cart.get("projects"):
+        raise ValueError("select_raven_projects_first")
+    systems = sorted({str(p.get("system") or "") for p in cart["projects"] if p.get("system")})
+    reference = body.get("reference", "project")
+    if reference == "current":
+        system = (state.get("system") or {}).get("name")
+    elif reference == "project":
+        system = body.get("system") or (systems[0] if len(systems) == 1 else None)
+        if system not in systems:
+            raise ValueError("select_construction_system")
+    else:
+        raise ValueError("invalid_reference")
+    system = _validate_clipboard_system_name(system)
+    radius, pad, days = body.get("radius", 50), body.get("pad", 3), body.get("days", 7)
+    if type(radius) is not int or radius not in (0, 25, 50, 100, 200):
+        raise ValueError("invalid_search_radius")
+    if type(pad) is not int or pad not in (1, 2, 3):
+        raise ValueError("invalid_pad_size")
+    if type(days) is not int or days not in (1, 3, 7, 30):
+        raise ValueError("invalid_market_age")
+    commodity = body.get("commodity", "all")
+    needs = {}
+    provisional = not cart.get("holdKnown") or bool(cart.get("stale"))
+    for row in cart.get("rows") or []:
+        key = str(row.get("key") or "")
+        if not re.fullmatch(r"[a-z0-9]{1,80}", key):
+            continue
+        if commodity != "all" and commodity != key:
+            continue
+        need = row.get("need")
+        if type(need) is not int or need <= 0:
+            continue
+        uncertain = not cart.get("holdKnown") or bool(row.get("carrierUnknown")) or bool(cart.get("stale"))
+        qty = need if uncertain else row.get("toCollect")
+        provisional = provisional or uncertain
+        if commodity != "all":
+            # Explicit material lookup also works when stock already covers it.
+            qty = qty if type(qty) is int and qty > 0 else need
+        if type(qty) is int and qty > 0:
+            needs[key] = {"name": str(row.get("name") or key), "quantity": qty}
+    if not needs:
+        raise ValueError("no_materials_to_source")
+    if len(needs) > SOURCING_MAX_MATERIALS:
+        raise ValueError("select_single_material")
+    return {"system": system, "radius": radius, "pad": pad, "days": days,
+            "needs": needs, "provisional": provisional}
+
+def ardent_export_rows(path):
+    request = urllib.request.Request(ARDENT_ROOT + path, headers={"Accept": "application/json", "User-Agent": "MongrelHUD/commodity-sourcing"})
+    with urllib.request.urlopen(request, timeout=15) as response:
+        raw = response.read(8 * 1024 * 1024 + 1)
+    if len(raw) > 8 * 1024 * 1024:
+        raise ValueError("market_response_too_large")
+    result = json.loads(raw)
+    if not isinstance(result, list):
+        raise ValueError("unexpected_market_response")
+    return result
+
+def aggregate_sourcing(request, batches):
+    needs = request["needs"]
+    stations = {}
+    for rows, local in batches:
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            key = re.sub(r"[^a-z0-9]", "", str(row.get("commodityName") or "").lower())
+            if key not in needs or str(row.get("stationType") or "").casefold() == "fleetcarrier":
+                continue
+            stock, price, pad = row.get("stock"), row.get("buyPrice"), row.get("maxLandingPadSize")
+            if type(stock) is not int or stock <= 0 or type(price) is not int or price <= 0:
+                continue
+            if type(pad) is not int or pad < request["pad"]:
+                continue
+            distance = 0 if local else row.get("distance")
+            if type(distance) not in (float, int) or not math.isfinite(distance) or not 0 <= distance <= request["radius"]:
+                continue
+            station, system = row.get("stationName"), row.get("systemName")
+            market = str(row.get("marketId") or "")
+            if not station or not system or not market.isdigit():
+                continue
+            try:
+                system = _validate_clipboard_system_name(system)
+                stamp = datetime.fromisoformat(str(row.get("updatedAt") or "").replace("Z", "+00:00"))
+                if stamp.tzinfo is None:
+                    stamp = stamp.replace(tzinfo=timezone.utc)
+                age = (datetime.now(timezone.utc) - stamp).total_seconds()
+                if not -300 <= age <= request["days"] * 86400:
+                    continue
+            except (ValueError, TypeError, OverflowError):
+                continue
+            arrival = row.get("distanceToArrival")
+            if type(arrival) not in (float, int) or not math.isfinite(arrival) or arrival < 0:
+                arrival = None
+            item = stations.setdefault(market, {"station": str(station)[:180], "system": system,
+                "distance": distance, "arrival": arrival, "pad": pad,
+                "stationType": str(row.get("stationType") or "")[:80], "materials": {}})
+            old = item["materials"].get(key)
+            if old and old["updatedAt"] >= stamp.isoformat():
+                continue
+            item["materials"][key] = {"key": key, "name": needs[key]["name"], "need": needs[key]["quantity"],
+                "stock": stock, "price": price, "updatedAt": stamp.isoformat()}
+    results = []
+    for item in stations.values():
+        materials = sorted(item["materials"].values(), key=lambda r: r["name"].casefold())
+        covered = sum(min(r["stock"], r["need"]) for r in materials)
+        cost = sum(min(r["stock"], r["need"]) * r["price"] for r in materials)
+        results.append({**item, "materials": materials, "covered": covered, "cost": cost,
+            "averagePrice": round(cost / covered) if covered else None, "matched": len(materials),
+            "updatedAt": min(r["updatedAt"] for r in materials)})
+    # Return a bounded union of convenience, supply and price candidates.
+    # Price is a weighted average for the offered subset, not a full-list quote.
+    def convenience(r):
+        return (-r["matched"], r["distance"], r["arrival"] if r["arrival"] is not None else math.inf, -r["covered"])
+    ranked = [sorted(results, key=convenience)[:40],
+              sorted(results, key=lambda r: (-r["covered"], *convenience(r)))[:40],
+              sorted(results, key=lambda r: (r["averagePrice"], *convenience(r)))[:40]]
+    unique = {}
+    for group in ranked:
+        for item in group:
+            unique[(item["system"], item["station"])] = item
+    return list(unique.values())
+
+
 class MongrelHudApp:
     def __init__(self, store: LocalStore, controller_html: str):
         self.store = store
@@ -1728,6 +1861,9 @@ class MongrelHudApp:
         self.lock = threading.RLock()
         self.snapshot = ScoutSnapshot({})
         self.navigation_arrival: dict[str, Any] = {}
+        self.sourcing_lock = threading.RLock()
+        self.sourcing_job = {}
+        self.sourcing_cache = {}
         self.pin = f"{secrets.randbelow(1000000):06d}"
         self.overlay_visible = True
         self.root: tk.Tk | None = None
@@ -4480,6 +4616,66 @@ class MongrelHudApp:
             method="POST",
         )
         return request_scout_json(request, "colonization_control_failed")
+
+
+    def commodity_sourcing(self, body):
+        """Paired controller only; no queries from background state polling."""
+        action = body.get("action")
+        if action == "status":
+            with self.sourcing_lock:
+                if body.get("id") != self.sourcing_job.get("id"):
+                    raise ValueError("sourcing_search_replaced")
+                return {"ok": True, **self.sourcing_job}
+        if action != "search":
+            raise ValueError("invalid_sourcing_action")
+        with self.lock:
+            if not self.snapshot.connected:
+                raise ValueError("scout_not_connected")
+            request = sourcing_request(self.snapshot.data, body)
+        with self.sourcing_lock:
+            if self.sourcing_job.get("status") == "running":
+                raise ValueError("sourcing_search_in_progress")
+            ident = secrets.token_hex(8)
+            self.sourcing_job = {"id": ident, "status": "running", "request": request,
+                                 "done": 0, "total": len(request["needs"]) + 1 if request["radius"] else 1}
+        def worker():
+            system = "/system/name/" + quote(request["system"], safe="")
+            params = {"fleetCarriers": "false", "maxDaysAgo": request["days"], "minVolume": 1}
+            jobs = [(system + "/commodities/exports?" + urlencode(params), True, "reference system")]
+            if request["radius"]:
+                params.update({"maxDistance": request["radius"], "sort": "distance"})
+                jobs.extend((system + "/commodity/name/" + quote(key, safe="") + "/nearby/exports?" + urlencode(params), False, key)
+                            for key in request["needs"])
+            batches, errors = [], []
+            # Sequential bounded requests and a five-minute cache, shared by
+            # controller searches; never poll the provider automatically.
+            try:
+                for path, local, label in jobs:
+                    try:
+                        cached = self.sourcing_cache.get(path)
+                        if cached and time.monotonic() - cached[0] < SOURCING_TTL:
+                            rows = cached[1]
+                        else:
+                            rows = ardent_export_rows(path)
+                            if len(self.sourcing_cache) >= 60:
+                                self.sourcing_cache.pop(next(iter(self.sourcing_cache)))
+                            self.sourcing_cache[path] = (time.monotonic(), rows)
+                        batches.append((rows, local))
+                    except Exception:
+                        errors.append(label)
+                    with self.sourcing_lock:
+                        self.sourcing_job["done"] += 1
+                results = aggregate_sourcing(request, batches)
+                with self.sourcing_lock:
+                    self.sourcing_job.update({"status": "complete" if batches else "failed",
+                        "results": results, "failedQueries": errors,
+                        "completedAt": datetime.now(timezone.utc).isoformat()})
+            except Exception:
+                with self.sourcing_lock:
+                    self.sourcing_job.update({"status": "failed", "results": [], "failedQueries": ["market search"]})
+        threading.Thread(target=worker, name="MongrelCommoditySourcing", daemon=True).start()
+        with self.sourcing_lock:
+            return {"ok": True, **self.sourcing_job}
 
     def surveyor_control(self, action: str, value: Any = None, system: str = "") -> dict[str, Any]:
         """On-demand, paired-iPad command to Scout's loopback SQLite ledger."""
@@ -8941,6 +9137,8 @@ def make_handler(app: MongrelHudApp):
                     result = app.set_cargo_priority(str(body.get("faction") or "auto"))
                 elif path == "/api/colonization":
                     result = app.colonization_control(body)
+                elif path == "/api/commodity-sourcing":
+                    result = app.commodity_sourcing(body)
                 elif path == "/api/surveyor":
                     result = app.surveyor_control(str(body.get("action") or ""), body.get("value"), str(body.get("system") or ""))
                 elif path == "/api/clipboard/system":
