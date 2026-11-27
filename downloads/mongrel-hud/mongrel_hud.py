@@ -4650,19 +4650,32 @@ class MongrelHudApp:
             # Sequential bounded requests and a five-minute cache, shared by
             # controller searches; never poll the provider automatically.
             try:
-                for path, local, label in jobs:
+                deadline = time.monotonic() + 90
+                for index, (path, local, label) in enumerate(jobs):
+                    if time.monotonic() >= deadline:
+                        errors.extend(job[2] for job in jobs[index:])
+                        break
                     try:
                         cached = self.sourcing_cache.get(path)
                         if cached and time.monotonic() - cached[0] < SOURCING_TTL:
                             rows = cached[1]
                         else:
                             rows = ardent_export_rows(path)
-                            if len(self.sourcing_cache) >= 60:
+                            if len(self.sourcing_cache) >= 32:
                                 self.sourcing_cache.pop(next(iter(self.sourcing_cache)))
                             self.sourcing_cache[path] = (time.monotonic(), rows)
                         batches.append((rows, local))
+                    except urllib.error.HTTPError as exc:
+                        errors.append(label)
+                        if exc.code in (429, 503):
+                            errors.extend(job[2] for job in jobs[index + 1:])
+                            break
                     except Exception:
                         errors.append(label)
+                        # Do not hammer an unavailable service with dozens of requests.
+                        if not batches and len(errors) >= 2:
+                            errors.extend(job[2] for job in jobs[index + 1:])
+                            break
                     with self.sourcing_lock:
                         self.sourcing_job["done"] += 1
                 results = aggregate_sourcing(request, batches)
