@@ -1129,7 +1129,7 @@ function renderRavenCart(){
   var projects=el("ravenProjects"), selected=(cart.projects||[]).map(function(p){return p.id});
   var rows=cart.source==="manual"?(cart.availableProjects||[]):(cart.projects||[]);
   var html=rows.map(function(p){return '<div><label>'+(cart.source==="manual"?'<input type="checkbox" data-raven-project="'+escapeHtml(p.id)+'" '+(selected.includes(p.id)?"checked":"")+' '+(!enabled?"disabled":"")+'> ':'')+escapeHtml(p.name||p.id)+(p.system?" · "+escapeHtml(p.system):"")+'</label></div>'}).join("");
-  if(projects.dataset.rendered!==html){projects.innerHTML=html;projects.dataset.rendered=html}
+  if(projects._ravenRendered!==html){projects.innerHTML=html;projects._ravenRendered=html}
   function amount(v){return v==null?"—":Number(v).toLocaleString()}
   setText(el("ravenSummary"),enabled&&cart.remaining!=null?"Remaining "+amount(cart.remaining)+" t · Collection trips "+amount(cart.collectionTrips)+" · Delivery trips "+amount(cart.deliveryTrips):"");
 }
