@@ -55,7 +55,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.24"
+APP_VERSION = "0.18.25"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -120,6 +120,7 @@ TARGET_CAPTURE_REGION = (0.16, 0.25, 0.70, 0.985)
 HUD_CYAN = "#8ce7ff"
 HUD_WHITE = "#f7fdff"
 HUD_MUTED = "#a9c8d3"
+HUD_COLONIZATION_UNAVAILABLE = "#606a72"
 HUD_DIM = "#355664"
 HUD_SHADOW = "#071319"
 HUD_RENDER_SCALE = 1.18
@@ -7452,7 +7453,7 @@ class MongrelHudApp:
             if not data.get("construction") and category != last_category:
                 line(str(category or "Other").upper(), HUD_CYAN, True)
                 last_category = category
-            color = HUD_GREEN if row.get("fulfilled") else HUD_MUTED if row.get("available") is False else HUD_WHITE
+            color = HUD_GREEN if row.get("fulfilled") else HUD_COLONIZATION_UNAVAILABLE if row.get("available") is False else HUD_WHITE
             self._draw_text(canvas, pad, y, ("✓ " if row.get("fulfilled") else "") + self.clip_line(row.get("name"), 29), scale, 10, color)
             for (key, _), x in zip(cols, positions):
                 value = row.get(key)

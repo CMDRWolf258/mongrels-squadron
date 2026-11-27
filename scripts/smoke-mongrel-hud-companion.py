@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.24"
+assert hud.APP_VERSION=="0.18.25"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -110,12 +110,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.21"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.22"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.23"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.24"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.25"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.25"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.26"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.25",
+    "name":"Mongrel HUD Windows v0.18.26",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.25" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.26" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -706,7 +707,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.24"
+    assert hud.APP_VERSION=="0.18.25"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -921,14 +922,14 @@ print("✓ Colonization cart right-edge anchoring, legacy migration and restart 
 
 # Actual renderer: identical text positions and canvas dimensions with any
 # combination of sync/report warnings; both warnings must be below the totals.
-def render_cart_warnings(extra, connected=True, rows=True):
+def render_cart_warnings(extra, connected=True, rows=True, capture_color=False):
     items=[{"name":"Steel","category":"Metals","need":100,"ship":10,"carrier":20} ] if rows else []
     data={"projects":[{"name":"Build A"}],"rows":items,"showShip":True,"showCarrier":True,"remaining":100,"collectionTrips":1,"deliveryTrips":1,**extra}
     drawn=[]
     app=types.SimpleNamespace(snapshot=types.SimpleNamespace(data={"colonization":data},connected=connected),
         _draw_title=lambda *args: 25,
         _panel_font=hud.MongrelHudApp._panel_font,
-        _draw_text=lambda canvas,x,y,text,*args,**kwargs: drawn.append((x,y,text)),
+        _draw_text=lambda canvas,x,y,text,*args,**kwargs: drawn.append((x,y,text,args[2]) if capture_color else (x,y,text)),
         clip_line=lambda text,n:str(text)[:n])
     canvas=types.SimpleNamespace(create_text=lambda *args,**kwargs: len(kwargs["text"]),bbox=lambda item:(0,0,item*9,15),delete=lambda item:None)
     size=hud.MongrelHudApp._render_colonization_canvas(app,canvas,1.0)
@@ -942,6 +943,21 @@ for have_rows in (True,False):
         assert len(drawn)>len(base)
         assert all(y>base[-1][1] for _,y,_ in drawn[len(base):])
 print("✓ Colonization warning footer preserves every commodity coordinate and canvas size")
+# Dim only explicitly unavailable rows; labels and quantities share the same color.
+color_rows=[
+    {"name":"Unavailable goods","category":"Metals","need":111,"ship":11,"carrier":21,"available":False},
+    {"name":"Available goods","category":"Metals","need":222,"ship":12,"carrier":22,"available":True},
+    {"name":"Unknown goods","category":"Metals","need":333,"ship":13,"carrier":23},
+    {"name":"Fulfilled goods","category":"Metals","need":444,"ship":14,"carrier":24,"available":False,"fulfilled":True},
+]
+_, colored=render_cart_warnings({"rows":color_rows},capture_color=True)
+colors={label:color for _,_,label,color in colored}
+assert hud.HUD_COLONIZATION_UNAVAILABLE=="#606a72"
+assert all(colors[label]==hud.HUD_COLONIZATION_UNAVAILABLE for label in ("Unavailable goods","111","11","21"))
+assert all(colors[label]==hud.HUD_WHITE for label in ("Available goods","222","12","22","Unknown goods","333"))
+assert colors["✓ Fulfilled goods"]==hud.HUD_GREEN and colors["444"]==hud.HUD_GREEN
+assert colors["METALS"]==hud.HUD_CYAN and colors["NEED"]==hud.HUD_CYAN
+print("✓ Colonization unavailable commodity labels and quantities use a dedicated dim gray")
 
 size,drawn=render_cart_warnings({"projects":[{"name":"Hayden Vision","buildType":"eupraxia"}]})
 assert any(text=="Hayden Vision (eupraxia)" for _,_,text in drawn)
