@@ -847,3 +847,14 @@ console.log('✓ Shipped HUD controller serializes controls, preserves assignmen
   assert.ok(html.indexOf('id="ravenSummary"')<html.indexOf('id="ravenNotice"'));
 }
 console.log("✓ Quiet background Raven refresh, manual-only feedback and stable list");
+
+{
+  const h=harness();
+  const project={id:"typed",name:"Hayden Vision",buildType:"eupraxia",system:"Diaba"};
+  for(const source of ["raven","manual"]){
+    h.controller.setState({connected:true,scout:{colonization:{enabled:true,source,projects:[project],availableProjects:[project]}}});
+    h.controller.renderRavenCart();
+    assert.match(h.node("ravenProjects").innerHTML,/Hayden Vision \(eupraxia\)/);
+  }
+  assert.ok(html.includes("COLONIZATION LOGISTICS"));
+}
