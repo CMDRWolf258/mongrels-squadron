@@ -6,6 +6,10 @@ Raven is authoritative; all quantities are outstanding tonnes, not original BOM.
 from __future__ import annotations
 
 import json
+import hashlib
+import os
+import sqlite3
+from pathlib import Path
 import re
 from collections import defaultdict, deque
 from datetime import datetime, timezone
@@ -100,6 +104,8 @@ class RavenClient:
                         return json.loads(raw)
                     except (ValueError, UnicodeError):
                         return raw.decode("utf-8").strip()
+                if method != "GET":
+                    return True
                 return json.loads(raw)
         except HTTPError as exc:
             if exc.code == 404 and missing is not None:
@@ -246,3 +252,116 @@ def cart_view(snapshot, cargo, market=None, *, source="raven", selected=(), cons
             "collectionTrips": None if incomplete_inventory else trips(collect), "deliveryTrips": trips(remaining),
             "capacity": capacity, "construction": construction, "marketKnown": market is not None,
             "holdKnown": hold_known, "updatedAt": snapshot.get("updatedAt")}
+
+
+def reporting_request(projects, commander, dock_market, system, entry):
+    """Translate a live journal event into a documented Raven write.
+
+    Never create projects, link carriers, mark completion, or guess a dock.
+    Depot snapshots replace outstanding requirements; contribution only credits
+    history. Carrier stock is changed solely by explicit cargo movements.
+    """
+    dock_market = str(dock_market or "")
+    if not re.fullmatch(r"\d{1,20}", dock_market):
+        return None
+    event = entry.get("event")
+    supplied = entry.get("MarketID")
+    if supplied is not None and str(supplied) != dock_market:
+        return None
+    if event in ("ColonisationConstructionDepot", "ColonisationContribution"):
+        if supplied is None:
+            return None
+        matches = [p for p in projects if p["marketId"] == dock_market
+                   and (not p["system"] or p["system"].casefold() == str(system).casefold())
+                   and not p["complete"]]
+        if len(matches) != 1:
+            return None
+        project = matches[0]
+        path = "/api/project/" + quote(project["id"], safe="")
+        if event == "ColonisationContribution":
+            contributions = entry.get("Contributions")
+            if not isinstance(contributions, list) or not contributions:
+                return None
+            body = defaultdict(int)
+            for row in contributions:
+                key = commodity_key(row.get("Name"))
+                amount = quantity(row.get("Amount"))
+                if not key or amount <= 0:
+                    raise ValueError("invalid_contribution")
+                body[key] += amount
+            return "POST", path + "/contribute/" + quote(commander, safe=""), dict(body)
+        resources = entry.get("ResourcesRequired")
+        if not isinstance(resources, list) or not resources:
+            return None
+        need, total = {}, 0
+        for row in resources:
+            key = commodity_key(row.get("Name"))
+            required = quantity(row.get("RequiredAmount"))
+            provided = quantity(row.get("ProvidedAmount"))
+            if not key or key in need or provided > required:
+                raise ValueError("invalid_depot")
+            need[key] = required - provided
+            total += required
+        # An incomplete journal snapshot must not erase a known outstanding item.
+        if not set(k for k, v in project["need"].items() if v > 0).issubset(need):
+            return None
+        return "PATCH", path, {"buildId": project["id"], "commodities": need,
+                                "maxNeed": total, "colonisationConstructionDepot": dict(entry)}
+    if not any(dock_market in p["carriers"] for p in projects if not p["complete"]):
+        return None
+    delta = defaultdict(int)
+    if event == "CargoTransfer":
+        transfers = entry.get("Transfers")
+        if not isinstance(transfers, list):
+            return None
+        for row in transfers:
+            direction = str(row.get("Direction") or "").casefold()
+            if direction not in ("tocarrier", "toship"):
+                continue
+            key = commodity_key(row.get("Type"))
+            amount = quantity(row.get("Count"))
+            if key and amount:
+                delta[key] += amount if direction == "tocarrier" else -amount
+    elif event in ("MarketBuy", "MarketSell") and supplied is not None:
+        key = commodity_key(entry.get("Type"))
+        amount = quantity(entry.get("Count"))
+        if key and amount:
+            delta[key] += amount if event == "MarketSell" else -amount
+    else:
+        return None
+    body = {k: v for k, v in delta.items() if v}
+    return ("PATCH", "/api/fc/" + dock_market + "/cargo", body) if body else None
+
+
+def report_live_event(client, commander, dock_market, system, entry, ledger_path=None):
+    """Record before sending: ambiguous HTTP failures must never replay deltas.
+
+    Identical journal events can be replayed by EDMC. Retain a durable fingerprint
+    and fail closed rather than invent a second movement. A manual Raven inventory
+    reconciliation is required after an ambiguous delivery response.
+    """
+    if not client.key:
+        raise ValueError("raven_reporting_key_required")
+    # The caller checks live session and captured dock before dispatch.
+    raw = client.request("/api/cmdr/" + quote(commander, safe="") + "/active", missing=[])
+    if not isinstance(raw, list):
+        raise ValueError("invalid_active_projects")
+    request = reporting_request([project_view(p) for p in raw], commander, dock_market, system, entry)
+    if request is None:
+        return "ignored"
+    method, path, body = request
+    fingerprint = hashlib.sha256(json.dumps([commander.casefold(), dock_market, entry],
+                                           sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    base = Path(os.environ.get("LOCALAPPDATA") or (Path.home() / ".local" / "share"))
+    db = Path(ledger_path) if ledger_path else base / "MongrelScout" / "raven-reporting.sqlite3"
+    db.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(db, timeout=5) as connection:
+        connection.execute("CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, status TEXT NOT NULL)")
+        inserted = connection.execute("INSERT OR IGNORE INTO events VALUES (?, 'pending')", (fingerprint,)).rowcount
+    if not inserted:
+        return "duplicate"
+    # An error after sending is ambiguous. Leave pending and surface it; do not retry.
+    client.request(path, method=method, body=body)
+    with sqlite3.connect(db, timeout=5) as connection:
+        connection.execute("UPDATE events SET status='sent' WHERE id=?", (fingerprint,))
+    return "sent"
