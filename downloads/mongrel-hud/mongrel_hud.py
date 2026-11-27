@@ -6963,6 +6963,8 @@ class MongrelHudApp:
             line("STALE DATA · check Raven / Scout", HUD_AMBER)
         elif data.get("error"):
             line(self.clip_line(data.get("error"), 48), HUD_AMBER)
+        if data.get("reportError"):
+            line("RAVEN REPORT UNCERTAIN · CHECK RAVEN", HUD_AMBER)
         rows = data.get("rows") or []
         if not rows:
             line("All materials delivered" if projects else "No selected Raven projects", HUD_GREEN if projects else HUD_MUTED)
