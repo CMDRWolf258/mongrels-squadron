@@ -1118,7 +1118,7 @@ assert.doesNotMatch(apiZipSource,/path:'MongrelScout\/README\.md'/);
 // Surveyor functionality, making a valid version label misleading.
 for (const endpoint of [zipSource,apiZipSource]) {
   for (const file of ['load.py','surveyor.py','surveyor_history.py',
-                      'surveyor_intel.py','surveyor_edd_bridge.py','mission_sync.py']) {
+                      'surveyor_intel.py','surveyor_edd_bridge.py','mission_sync.py','raven_colonization.py']) {
     assert.ok(endpoint.includes("source:'/downloads/mongrel-scout/"+file+"'"),
       'ZIP route missing static source '+file);
     assert.ok(endpoint.includes("path:'MongrelScout/"+file+"'"),
@@ -1126,6 +1126,26 @@ for (const endpoint of [zipSource,apiZipSource]) {
   }
   assert.ok(endpoint.includes("path:'THIRD_PARTY_NOTICES.md'"));
   assert.ok(endpoint.includes("path:'licenses/Apache-2.0.txt'"));
+  const handler = new Function(endpoint.replace(/\bexport\s+/g,'')+';return onRequestGet;')();
+  const version = plugin.match(/^PLUGIN_VERSION = "(\d+\.\d+\.\d+)"/m)[1];
+  const requestedPaths = [];
+  const env = {ASSETS:{fetch:async request=>{
+    const path = new URL(request.url).pathname;
+    requestedPaths.push(path);
+    return new Response(readFileSync('.'+path));
+  }}};
+  const response = await handler({request:new Request('https://example.invalid/api/downloads/mongrel-scout?v='+version),env});
+  assert.equal(response.status,200);
+  assert.equal(response.headers.get('X-Mongrel-Scout-Version'),version);
+  assert.match(response.headers.get('Cache-Control'),/no-store/);
+  assert.ok(response.headers.get('Content-Disposition').includes('MongrelScout-'+version+'.zip'));
+  const bytes = Buffer.from(await response.arrayBuffer());
+  assert.ok(bytes.includes(Buffer.from('PLUGIN_VERSION = "'+version+'"')));
+  assert.ok(bytes.includes(Buffer.from('MongrelScout/raven_colonization.py')));
+  assert.ok(requestedPaths.includes('/downloads/mongrel-scout/raven_colonization.py'));
+  const stale = await handler({request:new Request('https://example.invalid/api/downloads/mongrel-scout?v=0.0.0'),env});
+  assert.equal(stale.status,409);
+  assert.equal(stale.headers.get('Cache-Control'),'no-store');
 }
 const scoutReadme=readFileSync('downloads/mongrel-scout/README.md','utf8');
 assert.ok(scoutReadme.includes('Scout 1.13.16'));
