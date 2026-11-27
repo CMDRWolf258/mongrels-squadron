@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.20 — Commodity Sourcing
+
+Adds an iPad-only, on-demand Ardent Insight search below Colonization Logistics. Search current or selected project systems, all outstanding or a single material, with radius, landing pad and age filters. Group results by station, sort locally and copy systems to the PC clipboard. Nearby candidates are bounded and community-reported; missing or failed queries are disclosed. Direct PC requests and a five-minute in-memory cache avoid squad Cloudflare traffic. Scout 1.14.11 remains compatible.
+
 ## Mongrel HUD 0.18.19 — Colonization Logistics
 
 Renames Colonization Cart to Colonization Logistics and displays facility names followed by their Raven build type in parentheses. The overlay measures complete labels to avoid truncation and retains its right edge. Pair with Scout 1.14.10 for the type data.
