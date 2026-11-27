@@ -17,3 +17,7 @@ See the original EDDiscovery docs for history-era/bonus definitions.
 
 The EDDiscovery name and source links denote attribution, not a guarantee
 that our estimate exactly matches all Frontier sale conditions.
+
+## EDCD / FDevIDs commodity reference
+
+English commodity names, categories and symbol associations are based on the community-maintained factual reference at https://github.com/EDCD/FDevIDs/blob/master/commodity.csv (commodity.csv blob cc352808c6823b15cad60f04378196d9a01ab65b). The reference is used locally for display labels only; the catalog is not a live Frontier feed. No upstream code is incorporated.
