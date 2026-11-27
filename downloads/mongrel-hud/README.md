@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.26 — Ship Control Panel (first test build)
+
+The paired iPad controller now has a separate Control Panel tab with Navigation, Camera and Combat profiles. Active local Elite keyboard bindings are read from StartPreset and .binds XML files, never modified. Sync reads again; manual keyboard chord overrides are saved locally and resettable. Only individual mapped actions are sent, with foreground executable verification and short scan-code presses. Unmapped/HOTAS-only actions remain disabled until a keyboard binding is set. Docking and autodock/launch menu actions are manual taps; no automated sequences. Windows/game delivery and actual active presets need live testing. Scout unchanged.
+
 ## Mongrel HUD 0.18.25 — Dim unavailable commodities
 
 Colonization Logistics now uses a dedicated dark neutral gray for explicitly unavailable commodity rows, including all displayed quantities. Available and unknown commodities, fulfilled rows, headings and other HUD panels retain their existing colors. Scout is unchanged.

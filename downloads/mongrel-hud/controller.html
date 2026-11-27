@@ -135,6 +135,16 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 .sourcing-copy{width:100%;min-height:48px;margin-top:10px}
 @media(max-width:520px){#commoditySourcingPanel .raven-control{grid-template-columns:1fr;gap:4px}.sourcing-material{gap:4px;font-size:.8rem}}
 
+.deck-profiles,.deck-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.deck-profiles button{min-height:48px}
+.deck-grid button{min-height:80px;touch-action:manipulation;font-size:1.05rem;white-space:normal;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.deck-grid button small{font-size:.72rem;opacity:.75;overflow-wrap:anywhere;max-width:100%}
+.deck-grid button:disabled{opacity:.45}
+.deck-grid button:active:not(:disabled){background:#215368}
+.deck-map-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.deck-map-row input{width:100%;min-width:0;font-size:16px}
+.deck-map-row button{min-height:40px}
+@media(max-width:520px){.deck-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.deck-profiles button{font-size:.75rem}}
 </style>
 </head>
 <body>
@@ -143,8 +153,18 @@ label{display:block;color:var(--muted);font-size:.82rem;margin:9px 0 5px}input,t
 </div>
 <main>
   <div class="top"><div class="brand">MONGREL HUD</div><div class="status" id="connection">Connecting…</div></div>
-  <div class="controller-tabs"><button type="button" id="hudTabButton" class="active">HUD CONTROL</button><button type="button" id="carrierTabButton">CARRIER PA</button></div>
+  <div class="controller-tabs"><button type="button" id="hudTabButton" class="active">HUD CONTROL</button><button type="button" id="carrierTabButton">CARRIER PA</button><button type="button" id="deckTabButton">CONTROL PANEL</button></div>
 
+  <section id="deckTab" class="hidden">
+    <div class="card"><div class="top"><h2>SHIP CONTROL PANEL</h2><button type="button" id="deckSync">SYNC BINDINGS</button></div>
+      <p class="layout-hint" id="deckSource">Read keyboard bindings from the active Elite presets.</p>
+      <div class="deck-profiles"><button type="button" id="deckNav">NAVIGATION</button><button type="button" id="deckCamera">CAMERA</button><button type="button" id="deckCombat">COMBAT</button></div>
+      <button type="button" class="action" id="deckEdit">EDIT MAPPINGS</button>
+      <p class="notice" id="deckNotice" role="status" aria-live="polite"></p>
+      <div id="deckControls"></div>
+      <p class="layout-hint">One tap sends one keyboard chord. Elite must be in the foreground. For docking or auto-launch settings, use the individual cockpit menu controls; no automatic menu sequences. Unmapped actions require a keyboard binding in Elite.</p>
+    </div>
+  </section>
   <section id="carrierTab" class="hidden">
     <div class="card" id="carrierVoiceCard">
       <h2 id="carrierVoiceTitle">FLEET CARRIER · COMMS</h2>
@@ -619,7 +639,46 @@ var controllerTab="hud",routePreview=null,routeCloudActive=null,routeCloudLoaded
 var miningBrowser={systems:[],selected:"",data:null,loaded:false,loading:false,requestSeq:0,groupScope:"",groupExpanded:Object.create(null),itemExpanded:Object.create(null)};
 var flaggedDepositToReview=null;
  var savedDepositScope="",savedDepositOpen=Object.create(null);
-function showControllerTab(name){controllerTab=name==="carrier"?"carrier":"hud";el("hudTab").classList.toggle("hidden",controllerTab!=="hud");el("carrierTab").classList.toggle("hidden",controllerTab!=="carrier");el("hudTabButton").classList.toggle("active",controllerTab==="hud");el("carrierTabButton").classList.toggle("active",controllerTab==="carrier")}
+function showControllerTab(name){controllerTab=["carrier","deck"].includes(name)?name:"hud";["hud","carrier","deck"].forEach(function(tab){el(tab+"Tab").classList.toggle("hidden",controllerTab!==tab);el(tab+"TabButton").classList.toggle("active",controllerTab===tab)});if(controllerTab==="deck")readDeck()}
+var deckProfile="Navigation",deckActions=[],deckEditing=false,deckBusy=false;
+function deckMessage(message){setText(el("deckNotice"),message)}
+function renderDeck(){
+  ["Navigation","Camera","Combat"].forEach(function(p,i){el(["deckNav","deckCamera","deckCombat"][i]).classList.toggle("active",deckProfile===p)});
+  setText(el("deckEdit"),deckEditing?"DONE EDITING":"EDIT MAPPINGS");
+  var actions=deckActions.filter(function(a){return a.profile===deckProfile}),groups=[];
+  actions.forEach(function(a){if(!groups.includes(a.group))groups.push(a.group)});
+  el("deckControls").innerHTML=groups.map(function(g){
+    var rows=actions.filter(function(a){return a.group===g});
+    return '<h3>'+escapeHtml(g.toUpperCase())+'</h3>'+(deckEditing?rows.map(function(a){
+      return '<div class="deck-map-row"><span>'+escapeHtml(a.label)+'<small class="muted"> · '+escapeHtml(a.origin)+'</small></span><input aria-label="Binding for '+escapeAttr(a.label)+'" id="deckMap_'+escapeAttr(a.id)+'" value="'+escapeAttr(a.binding)+'" placeholder="LCTRL+K"><button type="button" data-deck-save="'+escapeAttr(a.id)+'">SAVE</button><button type="button" data-deck-reset="'+escapeAttr(a.id)+'">USE GAME BINDING</button></div>'
+    }).join(""):'<div class="deck-grid">'+rows.map(function(a){return '<button type="button" data-deck-send="'+escapeAttr(a.id)+'" '+(!a.binding?'disabled':'')+'>'+escapeHtml(a.label)+'<small>'+escapeHtml(a.binding||"UNMAPPED")+'</small></button>'}).join("")+'</div>')
+  }).join("");
+}
+async function readDeck(){
+  if(deckBusy)return;
+  deckBusy=true;deckMessage("Reading active game bindings…");
+  try{var r=await api("/api/ship-deck",{action:"read"});deckActions=r.actions||[];setText(el("deckSource"),r.source+" · "+deckActions.filter(function(a){return a.binding}).length+"/"+deckActions.length+" mapped");renderDeck();deckMessage("")}
+  catch(e){deckMessage("Binding sync failed · "+e.message)}
+  finally{deckBusy=false}
+}
+["deckNav","deckCamera","deckCombat"].forEach(function(id,i){el(id).onclick=function(){deckProfile=["Navigation","Camera","Combat"][i];renderDeck()}});
+el("deckSync").onclick=readDeck;
+el("deckEdit").onclick=function(){deckEditing=!deckEditing;renderDeck()};
+el("deckControls").onclick=async function(e){
+  var b=e.target.closest("[data-deck-send],[data-deck-save],[data-deck-reset]");
+  if(!b||deckBusy)return;
+  var id=b.getAttribute("data-deck-send")||b.getAttribute("data-deck-save")||b.getAttribute("data-deck-reset"),a=deckActions.find(function(v){return v.id===id});
+  if(!a)return;
+  var sending=b.hasAttribute("data-deck-send"),reset=b.hasAttribute("data-deck-reset");
+  if(sending&&deckEditing)return;
+  deckBusy=true;
+  try{
+    var r=await api("/api/ship-deck",sending?{action:"send",id:id,binding:a.binding}:reset?{action:"reset",id:id}:{action:"map",id:id,binding:el("deckMap_"+id).value.trim()});
+    if(sending){deckMessage("Command sent · "+a.label+" (game response not verified)")}
+    else{deckActions=r.actions||[];setText(el("deckSource"),r.source+" · "+deckActions.filter(function(v){return v.binding}).length+"/"+deckActions.length+" mapped");renderDeck();deckMessage("Mapping saved")}
+  }catch(err){deckMessage("Command not confirmed · "+err.message)}
+  finally{deckBusy=false}
+};
 function el(id){return document.getElementById(id)}
 function holdRefresh(ms){interactionUntil=Math.max(interactionUntil,Date.now()+(ms||900))}
 function setText(node,value){if(node&&node.textContent!==value)node.textContent=value}
@@ -1855,6 +1914,7 @@ el("pairButton").onclick=async function(){try{await api("/api/pair",{pin:el("pin
 document.querySelectorAll("[data-profile]").forEach(function(b){b.onclick=async function(){var profile=b.getAttribute("data-profile");try{var r=await mutate("/api/profile",{profile:profile});state=state||{};state.profile=r.profile||profile;if(r.layout)state.layout=r.layout;render();showLayoutStatus((profile==="combat"?"Combat":profile==="navigation"?"Navigation":profile==="exploration"?"Exploration":"Surface Mining")+" profile active",false)}catch(e){showLayoutStatus("Profile switch failed · "+e.message,true)}}});
 el("hudTabButton").onclick=function(){showControllerTab("hud")};
 el("carrierTabButton").onclick=function(){showControllerTab("carrier")};
+el("deckTabButton").onclick=function(){showControllerTab("deck")};
 el("voiceCarrierSelect").onchange=function(){selectedVoiceCarrierKey=String(el("voiceCarrierSelect").value||"");render();el("voiceNotice").textContent=selectedVoiceCarrierKey?"Editing "+(el("voiceCarrierSelect").selectedOptions[0]?.textContent||"selected carrier"):"Following currently detected carrier";};
 el("voicePackInstall").onclick=async function(){try{var r=await api("/api/voice-pack-install",{});state=state||{};state.voicePack=r.voicePack;render()}catch(e){el("voicePackStatus").textContent="Install failed · "+e.message}};
 el("voicePackRepair").onclick=async function(){try{var r=await api("/api/voice-pack-repair",{});state=state||{};state.voicePack=r.voicePack;render()}catch(e){el("voicePackStatus").textContent="Repair failed · "+e.message}};

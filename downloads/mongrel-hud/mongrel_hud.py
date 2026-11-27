@@ -55,7 +55,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.25"
+APP_VERSION = "0.18.26"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -2061,6 +2061,230 @@ def aggregate_sourcing(request, batches):
     return list(unique.values())
 
 
+
+# Ship deck: fixed single-action catalog, read-only game bindings, and local
+# foreground-checked keyboard delivery. No macros, background or repeated input.
+DECK_ACTIONS = (
+    ("SetSpeedZero","0%","Navigation","Throttle","ship"),
+    ("SetSpeed25","25%","Navigation","Throttle","ship"),
+    ("SetSpeed50","50%","Navigation","Throttle","ship"),
+    ("SetSpeed75","75%","Navigation","Throttle","ship"),
+    ("SetSpeed100","100%","Navigation","Throttle","ship"),
+    ("UseBoostJuice","Boost","Navigation","Flight","ship"),
+    ("Supercruise","Supercruise","Navigation","Flight","ship"),
+    ("Hyperspace","Hyperspace jump","Navigation","Flight","ship"),
+    ("HyperSuperCombination","Toggle FSD","Navigation","Flight","ship"),
+    ("GalaxyMapOpen","Galaxy map","Navigation","Navigation","ship"),
+    ("SystemMapOpen","System map","Navigation","Navigation","ship"),
+    ("SelectTarget","Target ahead","Navigation","Navigation","ship"),
+    ("LandingGearToggle","Landing gear","Navigation","Landing","ship"),
+    ("ShipSpotLightToggle","Lights","Navigation","Landing","ship"),
+    ("ToggleFlightAssist","Flight assist","Navigation","Landing","ship"),
+    ("FocusLeftPanel","Left panel","Navigation","Docking / ship menus","general"),
+    ("FocusRightPanel","Right panel","Navigation","Docking / ship menus","general"),
+    ("CyclePreviousPanel","Previous tab","Navigation","Docking / ship menus","general"),
+    ("CycleNextPanel","Next tab","Navigation","Docking / ship menus","general"),
+    ("UI_Up","Up","Navigation","Docking / ship menus","general"),
+    ("UI_Down","Down","Navigation","Docking / ship menus","general"),
+    ("UI_Left","Left","Navigation","Docking / ship menus","general"),
+    ("UI_Right","Right","Navigation","Docking / ship menus","general"),
+    ("UI_Select","Select","Navigation","Docking / ship menus","general"),
+    ("UI_Back","Back","Navigation","Docking / ship menus","general"),
+    ("HeadLookToggle","Headlook","Camera","View","general"),
+    ("HeadLookReset","Reset headlook","Camera","View","general"),
+    ("CameraSuiteToggle","Camera suite","Camera","View","general"),
+    ("VanityCameraScrollLeft","Previous camera","Camera","View","general"),
+    ("VanityCameraScrollRight","Next camera","Camera","View","general"),
+    ("DeployHardpointToggle","Hardpoints","Combat","Ship systems","ship"),
+    ("PlayerHUDModeToggle","Combat / analysis","Combat","Ship systems","ship"),
+    ("CycleFireGroupNext","Next fire group","Combat","Ship systems","ship"),
+    ("CycleFireGroupPrevious","Previous fire group","Combat","Ship systems","ship"),
+    ("SelectHighestThreat","Highest threat","Combat","Targeting","ship"),
+    ("CycleNextHostileTarget","Next hostile","Combat","Targeting","ship"),
+    ("CycleNextSubsystem","Next subsystem","Combat","Targeting","ship"),
+    ("CyclePreviousSubsystem","Previous subsystem","Combat","Targeting","ship"),
+    ("IncreaseSystemsPower","Systems pips","Combat","Power distributor","ship"),
+    ("IncreaseEnginesPower","Engines pips","Combat","Power distributor","ship"),
+    ("IncreaseWeaponsPower","Weapons pips","Combat","Power distributor","ship"),
+    ("ResetPowerDistribution","Reset pips","Combat","Power distributor","ship"),
+)
+DECK_IDS = {row[0] for row in DECK_ACTIONS}
+DECK_KEYS = {**{chr(i):i for i in range(65,91)}, **{str(i):48+i for i in range(10)},
+    **{f"F{i}":111+i for i in range(1,25)}, **{f"NUMPAD{i}":96+i for i in range(10)},
+    "LSHIFT":0xA0,"RSHIFT":0xA1,"LCTRL":0xA2,"RCTRL":0xA3,"LALT":0xA4,"RALT":0xA5,
+    "SPACE":0x20,"TAB":9,"RETURN":13,"ESCAPE":27,"BACKSPACE":8,
+    "UP":0x26,"DOWN":0x28,"LEFT":0x25,"RIGHT":0x27,"INSERT":0x2D,"DELETE":0x2E,
+    "HOME":0x24,"END":0x23,"PAGEUP":0x21,"PAGEDOWN":0x22,
+    "MINUS":0xBD,"EQUALS":0xBB,"COMMA":0xBC,"PERIOD":0xBE,"SLASH":0xBF,
+    "BACKSLASH":0xDC,"SEMICOLON":0xBA,"APOSTROPHE":0xDE,"GRAVE":0xC0,
+    "LEFTBRACKET":0xDB,"RIGHTBRACKET":0xDD,"NUMPADADD":0x6B,"NUMPADSUBTRACT":0x6D,
+    "NUMPADMULTIPLY":0x6A,"NUMPADDIVIDE":0x6F,"NUMPADDECIMAL":0x6E}
+DECK_MODIFIERS = {"LSHIFT","RSHIFT","LCTRL","RCTRL","LALT","RALT"}
+DECK_ALIASES = {"CTRL":"LCTRL","CONTROL":"LCTRL","SHIFT":"LSHIFT","ALT":"LALT",
+    "LEFTCONTROL":"LCTRL","RIGHTCONTROL":"RCTRL","LEFTSHIFT":"LSHIFT","RIGHTSHIFT":"RSHIFT",
+    "LEFTALT":"LALT","RIGHTALT":"RALT","ENTER":"RETURN","ESC":"ESCAPE","BACK":"BACKSPACE",
+    "PGUP":"PAGEUP","PGDN":"PAGEDOWN","TILDE":"GRAVE","GRAVEACCENT":"GRAVE",
+    "NUMPADPLUS":"NUMPADADD","NUMPADMINUS":"NUMPADSUBTRACT","NUMPADSTAR":"NUMPADMULTIPLY",
+    "NUMPADSLASH":"NUMPADDIVIDE","NUMPADPERIOD":"NUMPADDECIMAL"}
+def deck_key(value):
+    value = str(value or "").strip().upper().removeprefix("KEY_")
+    return DECK_ALIASES.get(value, value)
+
+def deck_chord(value):
+    if not isinstance(value, str) or len(value)>100:
+        raise ValueError("invalid_keyboard_binding")
+    parts = [deck_key(k) for k in value.split("+")]
+    if (not 1<=len(parts)<=4 or len(set(parts))!=len(parts) or
+        any(k not in DECK_KEYS for k in parts) or any(k not in DECK_MODIFIERS for k in parts[:-1])):
+        raise ValueError("invalid_keyboard_binding")
+    # Exclude OS/application shortcuts; do not deliver arbitrary system commands.
+    if any(k in {"LALT","RALT"} for k in parts[:-1]) and parts[-1] in {"TAB","F4","ESCAPE","SPACE"}:
+        raise ValueError("system_shortcut_not_allowed")
+    if any(k in {"LCTRL","RCTRL"} for k in parts[:-1]) and parts[-1] in {"ESCAPE","DELETE"}:
+        raise ValueError("system_shortcut_not_allowed")
+    return "+".join(parts)
+
+def deck_parse_binding(node):
+    if node is None:
+        return ""
+    for name in ("Primary","Secondary"):
+        key = node.find(name)
+        if key is None or key.get("Device")!="Keyboard":
+            continue
+        mods = key.findall("Modifier")
+        if any(m.get("Device")!="Keyboard" for m in mods):
+            continue
+        try:
+            return deck_chord("+".join([m.get("Key","") for m in mods]+[key.get("Key","")]))
+        except ValueError:
+            continue
+    return ""
+
+def deck_bindings(folder):
+    import xml.etree.ElementTree as ET
+    folder = Path(folder)
+    presets = []
+    for filename in ("StartPreset.4.start","StartPreset.start"):
+        try:
+            presets = (folder/filename).read_text(encoding="utf-8-sig").splitlines()
+            if presets:
+                break
+        except (OSError, UnicodeError):
+            continue
+    presets = [p.strip() for p in presets]
+    if not presets:
+        return {}, "Active preset not found; map controls manually."
+    # Odyssey: general, ship, SRV, on foot. Legacy: single shared preset.
+    active = {"general":presets[0],"ship":presets[1] if len(presets)>1 else presets[0]}
+    roots = {}
+    for path in folder.glob("*.binds"):
+        try:
+            if path.stat().st_size>2_000_000:
+                continue
+            root = ET.parse(path).getroot()
+            name = root.get("PresetName","")
+            for group, preset in active.items():
+                if name!=preset and path.stem!=preset:
+                    continue
+                version = tuple(int(root.get(k,"0")) for k in ("MajorVersion","MinorVersion"))
+                roots.setdefault(group,[]).append((version,root))
+        except (OSError, ET.ParseError, ValueError):
+            continue
+    selected = {}
+    for group, matches in roots.items():
+        matches.sort(key=lambda r:r[0],reverse=True)
+        if len(matches)==1 or matches[0][0]>matches[1][0]:
+            selected[group]=matches[0][1]
+    bindings={}
+    for action,_,_,_,group in DECK_ACTIONS:
+        root=selected.get(group)
+        if root is not None:
+            chord=deck_parse_binding(root.find(action))
+            if chord:
+                bindings[action]=chord
+    return bindings, "General: "+active["general"]+" · Ship: "+active["ship"]+(" · Some active files unavailable or ambiguous" if len(selected)<2 else "")
+
+def deck_active_window():
+    if sys.platform!="win32":
+        return None
+    user=ctypes.windll.user32
+    kernel=ctypes.windll.kernel32
+    user.GetForegroundWindow.restype=wintypes.HWND
+    user.GetWindowThreadProcessId.argtypes=[wintypes.HWND,ctypes.POINTER(wintypes.DWORD)]
+    kernel.OpenProcess.argtypes=[wintypes.DWORD,wintypes.BOOL,wintypes.DWORD]
+    kernel.OpenProcess.restype=wintypes.HANDLE
+    kernel.QueryFullProcessImageNameW.argtypes=[wintypes.HANDLE,wintypes.DWORD,wintypes.LPWSTR,ctypes.POINTER(wintypes.DWORD)]
+    kernel.CloseHandle.argtypes=[wintypes.HANDLE]
+    hwnd=user.GetForegroundWindow()
+    pid=wintypes.DWORD()
+    if not hwnd or not user.GetWindowThreadProcessId(hwnd,ctypes.byref(pid)):
+        return None
+    handle=kernel.OpenProcess(0x1000,False,pid.value)
+    if not handle:
+        return None
+    try:
+        size=wintypes.DWORD(32768)
+        buf=ctypes.create_unicode_buffer(size.value)
+        if kernel.QueryFullProcessImageNameW(handle,0,buf,ctypes.byref(size)) and Path(buf.value).name.casefold()=="elitedangerous64.exe":
+            return hwnd
+    finally:
+        kernel.CloseHandle(handle)
+    return None
+
+def deck_send(chord):
+    if sys.platform!="win32":
+        raise ValueError("windows_input_required")
+    keys=deck_chord(chord).split("+")
+    user=ctypes.windll.user32
+    hwnd=deck_active_window()
+    if not hwnd:
+        raise ValueError("elite_must_be_in_foreground")
+    if any(user.GetAsyncKeyState(DECK_KEYS[k])&0x8000 for k in set(keys)|DECK_MODIFIERS):
+        raise ValueError("release_held_keyboard_keys")
+    ptr=ctypes.c_size_t
+    class KEYBD(ctypes.Structure):
+        _fields_=[("vk",wintypes.WORD),("scan",wintypes.WORD),("flags",wintypes.DWORD),("time",wintypes.DWORD),("extra",ptr)]
+    class MOUSE(ctypes.Structure):
+        _fields_=[("x",wintypes.LONG),("y",wintypes.LONG),("data",wintypes.DWORD),("flags",wintypes.DWORD),("time",wintypes.DWORD),("extra",ptr)]
+    class HARDWARE(ctypes.Structure):
+        _fields_=[("message",wintypes.DWORD),("low",wintypes.WORD),("high",wintypes.WORD)]
+    class PAYLOAD(ctypes.Union):
+        _fields_=[("keyboard",KEYBD),("mouse",MOUSE),("hardware",HARDWARE)]
+    class INPUT(ctypes.Structure):
+        _fields_=[("kind",wintypes.DWORD),("payload",PAYLOAD)]
+    user.MapVirtualKeyW.argtypes=[wintypes.UINT,wintypes.UINT]
+    user.MapVirtualKeyW.restype=wintypes.UINT
+    user.SendInput.argtypes=[wintypes.UINT,ctypes.POINTER(INPUT),ctypes.c_int]
+    user.SendInput.restype=wintypes.UINT
+    scans=[]
+    for key in keys:
+        scan=user.MapVirtualKeyW(DECK_KEYS[key],4)
+        if not scan:
+            raise ValueError("unsupported_keyboard_key")
+        scans.append((scan&255,8|(1 if scan>>8==0xE0 else 0)))
+    def event(scan,flags,up=False):
+        item=INPUT(1,PAYLOAD(keyboard=KEYBD(0,scan,flags|(2 if up else 0),0,0)))
+        return user.SendInput(1,ctypes.byref(item),ctypes.sizeof(INPUT))==1
+    pressed=[]
+    release_failed=False
+    try:
+        for scan,flags in scans:
+            if deck_active_window()!=hwnd:
+                raise ValueError("elite_focus_changed")
+            if not event(scan,flags):
+                raise ValueError("windows_input_blocked")
+            pressed.append((scan,flags))
+        time.sleep(0.08)
+    finally:
+        for scan,flags in reversed(pressed):
+            if not event(scan,flags,True):
+                release_failed=True
+    if release_failed:
+        raise ValueError("key_release_failed")
+    if deck_active_window()!=hwnd:
+        raise ValueError("elite_focus_changed")
+
+
 class MongrelHudApp:
     def __init__(self, store: LocalStore, controller_html: str):
         self.store = store
@@ -2068,6 +2292,7 @@ class MongrelHudApp:
         self.lock = threading.RLock()
         self.snapshot = ScoutSnapshot({})
         self.navigation_arrival: dict[str, Any] = {}
+        self.deck_lock = threading.Lock()
         self.sourcing_lock = threading.RLock()
         self.sourcing_job = {}
         self.sourcing_cache = {}
@@ -4824,6 +5049,48 @@ class MongrelHudApp:
         )
         return request_scout_json(request, "colonization_control_failed")
 
+
+    def ship_deck(self, body):
+        action = body.get("action")
+        ident = body.get("id")
+        with self.deck_lock:
+            root = Path(os.environ.get("LOCALAPPDATA", str(Path.home()/"AppData"/"Local"))) / "Frontier Developments" / "Elite Dangerous" / "Options" / "Bindings"
+            imported, source = deck_bindings(root)
+            with self.store.lock:
+                overrides = self.store.data.get("shipDeckOverrides", {})
+                overrides = dict(overrides) if isinstance(overrides,dict) else {}
+                if action in ("map","reset"):
+                    if ident not in DECK_IDS:
+                        raise ValueError("unknown_deck_action")
+                    if action=="reset":
+                        overrides.pop(ident,None)
+                    else:
+                        value=body.get("binding")
+                        overrides[ident]=deck_chord(value) if value else ""
+                    self.store.data["shipDeckOverrides"]=overrides
+                    self.store.save()
+            bindings = {}
+            for key in DECK_IDS:
+                value=overrides.get(key,imported.get(key,""))
+                try:
+                    bindings[key]=deck_chord(value) if value else ""
+                except ValueError:
+                    bindings[key]=""
+            if action=="send":
+                if ident not in DECK_IDS or not bindings.get(ident):
+                    raise ValueError("deck_action_unmapped")
+                # Match the displayed chord so a changed active preset cannot
+                # silently send a different key from the one the pilot saw.
+                if body.get("binding")!=bindings[ident]:
+                    raise ValueError("binding_changed_refresh_deck")
+                deck_send(bindings[ident])
+                return {"ok":True,"sent":ident}
+            if action not in ("read","map","reset"):
+                raise ValueError("invalid_deck_action")
+            return {"ok":True,"source":source,"actions":[
+                {"id":key,"label":label,"profile":profile,"group":group,"binding":bindings[key],
+                 "origin":"manual" if key in overrides else "imported" if bindings[key] else "unmapped"}
+                for key,label,profile,group,_ in DECK_ACTIONS]}
 
     def commodity_sourcing(self, body):
         """Paired controller only; no queries from background state polling."""
@@ -9374,6 +9641,8 @@ def make_handler(app: MongrelHudApp):
                     result = app.set_cargo_priority(str(body.get("faction") or "auto"))
                 elif path == "/api/colonization":
                     result = app.colonization_control(body)
+                elif path == "/api/ship-deck":
+                    result = app.ship_deck(body)
                 elif path == "/api/commodity-sourcing":
                     result = app.commodity_sourcing(body)
                 elif path == "/api/surveyor":
