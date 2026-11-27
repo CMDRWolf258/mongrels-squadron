@@ -137,9 +137,17 @@ HUD_EVENT_TYPES = {
 
 KEY_RAVEN_ENABLED = "MongrelScoutRavenEnabled"
 KEY_RAVEN_KEY = "MongrelScoutRavenApiKey"
+KEY_RAVEN_REPORTING = "MongrelScoutRavenReporting"
 KEY_RAVEN_SETTINGS = "MongrelScoutRavenSettings"
 _raven_enabled_var = None
 _raven_key_var = None
+_raven_reporting_var = None
+_raven_report_queue = deque()
+_raven_report_running = False
+_raven_report_error = ""
+_raven_report_owner = ""
+_raven_depot_signature = None
+_raven_process_start = time.time()
 _raven_lock = threading.RLock()
 _raven_module = None
 _raven_owner = ""
@@ -422,6 +430,69 @@ def _raven_observe_context(commander, entry):
         _raven_market = market
 
 
+def _raven_queue_reporting(commander, system, entry):
+    """Opt-in live writeback. Never report historical journal replay."""
+    global _raven_report_running, _raven_report_error, _raven_report_owner, _raven_depot_signature
+    if not config.get_bool(KEY_RAVEN_REPORTING) or not config.get_str(KEY_RAVEN_KEY):
+        return
+    event = entry.get("event")
+    if event not in {"ColonisationContribution", "ColonisationConstructionDepot", "CargoTransfer", "MarketBuy", "MarketSell"}:
+        return
+    try:
+        stamp = datetime.fromisoformat(str(entry.get("timestamp") or "").replace("Z", "+00:00")).timestamp()
+    except (ValueError, TypeError, OverflowError):
+        return
+    if stamp < _raven_process_start or abs(time.time() - stamp) > 120:
+        return
+    with _raven_lock:
+        identity = commander.casefold()
+        if identity != _raven_context_owner or not _raven_dock:
+            return
+        dock = _raven_dock
+        if _raven_report_owner != identity:
+            _raven_report_owner = identity
+            _raven_report_error = ""
+            _raven_depot_signature = None
+        if event == "ColonisationConstructionDepot":
+            signature = (identity, dock, json.dumps(entry.get("ResourcesRequired"), sort_keys=True))
+            if signature == _raven_depot_signature:
+                return
+            _raven_depot_signature = signature
+        if len(_raven_report_queue) >= 64:
+            _raven_report_error = "Raven report queue full. Reconcile Raven before continuing."
+            return
+        _raven_report_queue.append((commander, system, dock, json.loads(json.dumps(entry))))
+        if _raven_report_running:
+            return
+        _raven_report_running = True
+
+    def worker():
+        global _raven_report_running, _raven_report_error, _raven_depot_signature
+        while True:
+            with _raven_lock:
+                if not _raven_report_queue:
+                    _raven_report_running = False
+                    return
+                cmdr, sysname, dock_market, journal = _raven_report_queue.popleft()
+                owner = _raven_context_owner
+            if (owner != cmdr.casefold() or not config.get_bool(KEY_RAVEN_ENABLED)
+                    or not config.get_bool(KEY_RAVEN_REPORTING)):
+                continue
+            try:
+                module = _get_raven_module()
+                client = module.RavenClient(config.get_str(KEY_RAVEN_KEY) or "")
+                result = module.report_live_event(client, cmdr, dock_market, sysname, journal)
+                if result == "sent":
+                    _raven_refresh(cmdr, force=True)
+            except Exception:
+                with _raven_lock:
+                    if _raven_report_owner == cmdr.casefold():
+                        _raven_report_error = "Raven report uncertain or failed. Check Raven inventory and progress; no automatic replay."
+                    _raven_depot_signature = None
+
+    threading.Thread(target=worker, name="MongrelRavenReporting", daemon=True).start()
+
+
 def _raven_snapshot(state):
     commander = str(state.get("commander") or "").strip()
     settings = _raven_settings(commander)
@@ -437,6 +508,8 @@ def _raven_snapshot(state):
             return result
         data = _raven_cache
         result["error"] = _raven_error
+        result["reportError"] = _raven_report_error if _raven_report_owner == commander.casefold() else ""
+        result["reportingEnabled"] = bool(config.get_bool(KEY_RAVEN_REPORTING) and config.get_str(KEY_RAVEN_KEY))
         result["stale"] = bool(_raven_error and data is not None)
         market = _raven_market if _raven_context_owner == commander.casefold() else None
         construction = bool(_raven_construction and _raven_context_owner == commander.casefold())
@@ -968,7 +1041,7 @@ def plugin_app(parent: tk.Frame) -> tk.Frame:
 
 def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.Frame]:
     """Settings tab shown inside EDMC."""
-    global _enabled_var, _survey_intel_var, _token_var, _endpoint_var, _scout_link_var, _nav_auto_copy_var, _raven_enabled_var, _raven_key_var
+    global _enabled_var, _survey_intel_var, _token_var, _endpoint_var, _scout_link_var, _nav_auto_copy_var, _raven_enabled_var, _raven_key_var, _raven_reporting_var
 
     _survey_intel_var = tk.IntVar(value=1 if config.get_bool(KEY_SURVEY_INTEL_ENABLED) else 0)
     _enabled_var = tk.IntVar(value=1 if config.get_bool(KEY_ENABLED) else 0)
@@ -979,6 +1052,7 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
 
     _raven_enabled_var = tk.IntVar(value=1 if config.get_bool(KEY_RAVEN_ENABLED) else 0)
     _raven_key_var = tk.StringVar(value=config.get_str(KEY_RAVEN_KEY) or "")
+    _raven_reporting_var = tk.IntVar(value=1 if config.get_bool(KEY_RAVEN_REPORTING) else 0)
 
     frame = nb.Frame(parent)
     frame.columnconfigure(1, weight=1)
@@ -1042,8 +1116,9 @@ def plugin_prefs(parent: nb.Notebook, cmdr: str, is_beta: bool) -> Optional[tk.F
         "They receive no commander identity, raw journal, discovery history, or earnings. Turn off Surveyor "
         "enrichment above to prevent those lookups."
     )
+    nb.Checkbutton(frame, text="Report deliveries and carrier movements to Raven (disable other Raven reporters first)", variable=_raven_reporting_var).grid(row=10, column=0, columnspan=2, sticky=tk.W, pady=(8, 0))
     nb.Label(frame, text=privacy, wraplength=520, justify=tk.LEFT).grid(
-        row=10, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
+        row=11, column=0, columnspan=2, sticky=tk.W, pady=(10, 4)
     )
     return frame
 
@@ -1054,6 +1129,8 @@ def prefs_changed(cmdr: str, is_beta: bool) -> None:
         config.set(KEY_RAVEN_ENABLED, int(_raven_enabled_var.get()))
     if _raven_key_var is not None:
         config.set(KEY_RAVEN_KEY, _raven_key_var.get().strip())
+    if _raven_reporting_var is not None:
+        config.set(KEY_RAVEN_REPORTING, int(_raven_reporting_var.get()))
     if _enabled_var is not None:
         config.set(KEY_ENABLED, int(_enabled_var.get()))
     if _survey_intel_var is not None:
@@ -1259,7 +1336,8 @@ def journal_entry(
     if config.get_bool(KEY_RAVEN_ENABLED):
         try:
             _raven_observe_context(cmdr, entry)
-            _raven_refresh(cmdr, force=event in {"ColonisationContribution", "ColonisationConstructionDepot"})
+            _raven_queue_reporting(cmdr, system, entry)
+            _raven_refresh(cmdr, force=event == "ColonisationContribution")
         except Exception:
             pass
 
