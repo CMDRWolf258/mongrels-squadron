@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.16 — Raven controller sizing
+
+Larger touch-friendly visibility and build-selection dropdowns, full-width Refresh Raven button, and readable sync diagnostics. Update Scout to 1.14.8 alongside HUD.
+
 ## Mongrel HUD 0.18.15 — Raven Colonial Cart
 
 Install with Scout 1.14.7. In EDMC preferences, enable the Raven cart and enter your Raven API key locally. On the paired iPad HUD page use **Colonization Cart** to select Continuous (default), Automatic or Off, follow Raven or choose projects locally, and press **Refresh Raven**. The game overlay shows remaining materials, current ship and linked carrier columns when relevant, market availability and estimated collection/delivery trips. Existing Cargo mission overlay and saved layouts are preserved. Raven is the authoritative construction planner. Reporting is separately opt-in in Scout; disable other Raven reporters before enabling it.

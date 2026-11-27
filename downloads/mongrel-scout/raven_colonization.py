@@ -15,9 +15,9 @@ from collections import defaultdict, deque
 from datetime import datetime, timezone
 from urllib.parse import quote
 from urllib.request import Request, build_opener, HTTPRedirectHandler
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
-API_ROOT = "https://ravencolonial100-awcbdvabgze4c5cq.canadacentral-01.azurewebsites.net"
+API_ROOT = "https://ravencolonial.net"
 MAX_RESPONSE = 4 * 1024 * 1024
 CATEGORIES = {
     "Chemicals": ("Liquid Oxygen", "Water", "Hydrogen Fuel", "Mineral Oil"),
@@ -58,6 +58,8 @@ def project_view(raw):
     if not isinstance(raw, dict) or not isinstance(raw.get("buildId"), str) or not raw["buildId"]:
         raise ValueError("invalid_project")
     links = raw.get("linkedFC")
+    if links is None:
+        links = []
     if not isinstance(links, list):
         raise ValueError("invalid_carrier_links")
     carriers = []
@@ -72,6 +74,10 @@ def project_view(raw):
             "complete": raw.get("complete") is True, "need": cargo_map(raw.get("commodities")),
             "carriers": carriers}
 
+class RavenSyncError(RuntimeError):
+    """An explicitly sanitized error safe to display on the paired controller."""
+
+
 class _NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
         return None
@@ -85,7 +91,7 @@ class RavenClient:
         if not path.startswith("/api/"):
             raise ValueError("invalid_raven_path")
         headers = {"Accept": "application/json", "User-Agent": "MongrelScout/colonization"}
-        if self.key:
+        if self.key and (method != "GET" or path == "/api/cmdr/"):
             headers["rcc-key"] = self.key
         data = None
         if body is not None:
@@ -110,26 +116,42 @@ class RavenClient:
         except HTTPError as exc:
             if exc.code == 404 and missing is not None:
                 return missing
-            raise
+            # Never include the URL, response body, commander name or API key.
+            raise RavenSyncError(f"HTTP {exc.code}") from None
+        except (URLError, TimeoutError, OSError):
+            raise RavenSyncError("Network or TLS connection failed") from None
+        except (ValueError, UnicodeError):
+            raise RavenSyncError("Invalid response format") from None
 
     def snapshot(self, commander):
         path = "/api/cmdr/" + quote(commander, safe="")
-        raw = self.request(path + "/active", missing=[])
+        def read(stage, suffix, missing=None):
+            try:
+                return self.request(path + suffix, missing=missing)
+            except RavenSyncError as exc:
+                raise RavenSyncError(f"{stage}: {exc}") from None
+        raw = read("Active projects", "/active", [])
         if not isinstance(raw, list):
-            raise ValueError("invalid_active_projects")
-        projects = [project_view(p) for p in raw]
-        projects = [p for p in projects if not p["complete"]]
+            raise RavenSyncError("Active projects: unexpected response format")
+        try:
+            projects = [project_view(p) for p in raw if not (isinstance(p, dict) and p.get("complete") is True)]
+        except (ValueError, TypeError, KeyError):
+            raise RavenSyncError("Active projects: invalid project data") from None
         ids = [p["id"] for p in projects]
         if len(set(ids)) != len(ids):
-            raise ValueError("duplicate_project")
-        primary = self.request(path + "/primary", missing="")
+            raise RavenSyncError("Active projects: duplicate project IDs")
+        primary = read("Primary project", "/primary", "")
         if primary is not None and not isinstance(primary, str):
-            raise ValueError("invalid_primary")
+            raise RavenSyncError("Primary project: unexpected response format")
         primary = str(primary or "").strip()
-        # A missing primary means all active projects; an unknown nonempty
-        # primary is not silently widened to every project.
-        if primary and primary not in ids:
-            raise ValueError("primary_not_active")
+        # Mirror SRVSurvey: ignore a primary that is no longer active.
+        if primary not in ids:
+            primary = ""
+        hidden = read("Hidden projects", "/hiddenIDs", [])
+        if hidden is None:
+            hidden = []
+        if not isinstance(hidden, list) or any(not isinstance(x, str) for x in hidden):
+            raise RavenSyncError("Hidden projects: unexpected response format")
         stocks = {}
         for market in sorted({fc for p in projects for fc in p["carriers"]}):
             try:
@@ -139,7 +161,7 @@ class RavenClient:
                 stocks[market] = cargo_map(fc.get("cargo"))
             except Exception:
                 stocks[market] = None
-        return {"projects": projects, "primary": primary, "stocks": stocks,
+        return {"projects": projects, "primary": primary, "hidden": hidden, "stocks": stocks,
                 "updatedAt": datetime.now(timezone.utc).isoformat()}
 
 def _carrier_coverage(projects, stocks, commodity):
@@ -200,7 +222,7 @@ def cart_view(snapshot, cargo, market=None, *, source="raven", selected=(), cons
     """Build a JSON-safe cart using Scout's current corrected ship cargo."""
     projects = snapshot.get("projects", [])
     primary = snapshot.get("primary")
-    chosen = set(selected) if source == "manual" else ({primary} if primary else {p["id"] for p in projects})
+    chosen = set(selected) if source == "manual" else ({primary} if primary else {p["id"] for p in projects} - set(snapshot.get("hidden", [])))
     projects = [p for p in projects if p["id"] in chosen]
     stocks = snapshot.get("stocks", {})
     hold_known = isinstance(cargo, dict) and bool(cargo.get("updatedAt"))

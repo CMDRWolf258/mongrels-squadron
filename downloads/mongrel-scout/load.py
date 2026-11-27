@@ -25,7 +25,7 @@ except Exception:  # EDMC supplies this; fallback keeps settings usable if impor
     monitor = None
 
 PLUGIN_NAME = "Mongrel Scout"
-PLUGIN_VERSION = "1.14.7"
+PLUGIN_VERSION = "1.14.8"
 VERSION = PLUGIN_VERSION
 MONGREL = "Regiment of Imperial Mongrels"
 DEFAULT_ENDPOINT = "https://mongrels-squadron.pages.dev/api/operations/scout-ingest"
@@ -363,10 +363,15 @@ def _raven_refresh(commander, force=False):
                 if _raven_owner == identity and config.get_bool(KEY_RAVEN_ENABLED):
                     _raven_cache = data
                     _raven_error = ""
-        except Exception:
+        except Exception as exc:
             with _raven_lock:
                 if _raven_owner == identity:
-                    _raven_error = "Raven refresh failed; last successful data retained."
+                    # Only the adapter's explicitly sanitized diagnostic may leave Scout.
+                    safe = _raven_module is not None and isinstance(exc, _raven_module.RavenSyncError)
+                    detail = str(exc) if safe else "Local Raven adapter unavailable or incompatible"
+                    _raven_error = "Raven refresh failed · " + detail
+                    if _raven_cache is not None:
+                        _raven_error += " · last successful data retained"
         finally:
             with _raven_lock:
                 _raven_refreshing = False

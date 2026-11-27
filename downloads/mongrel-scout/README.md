@@ -1,3 +1,7 @@
+## Scout 1.14.8 — Raven refresh compatibility
+
+Uses Raven's canonical service address and hidden-project selection, tolerates missing carrier links and a retired primary selection, and provides sanitized failure-stage diagnostics. Update alongside HUD 0.18.16. Existing API key and settings are retained.
+
 ## Scout 1.14.7 — Raven Colonial Cart
 
 Requires HUD 0.18.15. In EDMC Settings → Mongrel Scout, enable the Raven Colonial construction cart and enter your Raven API key from Raven account settings. The key stays in local EDMC settings and is not exposed to the iPad or squad site. To replace SRVSurvey's Raven reporting, stop or disable its Raven reporting first, then enable **Report deliveries and carrier movements to Raven** in Scout. Only one reporter should be active. Ambiguous write failures are not retried; check Raven inventory/progress if a reporting warning appears. Raven remains authoritative, and the existing Cargo overlay is unchanged.

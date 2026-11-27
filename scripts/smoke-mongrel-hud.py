@@ -65,7 +65,7 @@ assert spec and spec.loader
 plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plugin)
 
-assert plugin.PLUGIN_VERSION == "1.14.7"
+assert plugin.PLUGIN_VERSION == "1.14.8"
 assert plugin.HUD_BRIDGE_HOST == "127.0.0.1"
 assert plugin.HUD_BRIDGE_PORT == 43857
 assert plugin.HUD_EVENT_LIMIT == 256
@@ -909,3 +909,34 @@ with TemporaryDirectory() as folder:
     assert len(client.writes) == 1
 
 print("✓ Raven construction cart, multi-project allocation, dynamic columns and writeback deduplication")
+
+# Match the live Raven client contract, including hidden builds and a stale primary.
+class FakeRavenReads(raven.RavenClient):
+    def __init__(self):
+        self.paths = []
+    def request(self, path, method="GET", body=None, missing=None):
+        self.paths.append(path)
+        if path.endswith("/active"):
+            return [{"buildId": "a", "buildName": "Visible", "commodities": {"steel": 20}, "linkedFC": None},
+                    {"buildId": "b", "buildName": "Hidden", "commodities": {"steel": 90}, "linkedFC": []}]
+        if path.endswith("/primary"):
+            return "old-completed-id"
+        if path.endswith("/hiddenIDs"):
+            return ["b"]
+        raise AssertionError(path)
+reads = FakeRavenReads()
+result = reads.snapshot("Test Cmdr")
+assert raven.API_ROOT == "https://ravencolonial.net"
+assert result["primary"] == "" and result["hidden"] == ["b"]
+assert raven.cart_view(result, cargo)["remaining"] == 20
+assert raven.cart_view(result, cargo, source="manual", selected=["b"])["remaining"] == 90
+assert reads.paths == ["/api/cmdr/Test%20Cmdr/active", "/api/cmdr/Test%20Cmdr/primary", "/api/cmdr/Test%20Cmdr/hiddenIDs"]
+class FailingRavenReads(FakeRavenReads):
+    def request(self, path, **kwargs):
+        raise raven.RavenSyncError("HTTP 403")
+try:
+    FailingRavenReads().snapshot("Test Cmdr")
+    raise AssertionError("expected sanitized stage error")
+except raven.RavenSyncError as exc:
+    assert str(exc) == "Active projects: HTTP 403"
+print("✓ Raven canonical service, hidden-build parity, nullable links and safe error diagnostics")
