@@ -67,12 +67,19 @@ jobs:
           python-version: '3.12'
 
       - name: Install build dependencies
-        run: python -m pip install --disable-pip-version-check pyinstaller pillow "rapidocr-onnxruntime==1.4.4" zeroconf
+        run: python -m pip install --disable-pip-version-check pyinstaller pillow "rapidocr-onnxruntime==1.4.4" zeroconf certifi truststore
 
       - name: Build standalone executable
         shell: pwsh
         run: |
-          pyinstaller --noconfirm --clean --onefile --windowed --name MongrelHUD --collect-all rapidocr_onnxruntime --collect-all onnxruntime --collect-all zeroconf --add-data "downloads/mongrel-hud/controller.html;." downloads/mongrel-hud/mongrel_hud.py
+          pyinstaller --noconfirm --clean --onefile --windowed --name MongrelHUD --collect-all rapidocr_onnxruntime --collect-all onnxruntime --collect-all zeroconf --collect-all certifi --collect-all truststore --add-data "downloads/mongrel-hud/controller.html;." downloads/mongrel-hud/mongrel_hud.py
+          $report = Join-Path $PWD "sourcing-tls-report.json"
+          $proc = Start-Process -FilePath (Join-Path $PWD "dist/MongrelHUD.exe") -ArgumentList "--sourcing-self-test", "`"$report`"" -Wait -PassThru
+          if (-not (Test-Path $report)) { throw "Packaged HUD TLS self-test produced no report" }
+          Get-Content $report
+          $check = Get-Content $report -Raw | ConvertFrom-Json
+          if ($proc.ExitCode -ne 0 -or -not $check.ok) { throw "Packaged HUD TLS self-test failed" }
+          if (-not $check.liveMarket.ok) { Write-Warning "Live Spansh probe failed: $($check.liveMarket.error)" }
           New-Item -ItemType Directory -Force -Path package | Out-Null
           Copy-Item dist/MongrelHUD.exe package/MongrelHUD.exe
           Copy-Item downloads/mongrel-hud/README.md package/README.md

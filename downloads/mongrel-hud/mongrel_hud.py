@@ -11,6 +11,7 @@ import re
 import secrets
 import shutil
 import socket
+import ssl
 import subprocess
 import tarfile
 import sys
@@ -54,7 +55,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.22"
+APP_VERSION = "0.18.23"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1805,14 +1806,54 @@ def spansh_sourcing_payload(request, key):
             "sort": [{"distance": {"direction": "asc"}}], "size": 100, "page": 0}
 
 
+def sourcing_tls_context():
+    """Use OS trust plus an explicitly packaged, current public CA bundle."""
+    context = ssl.create_default_context()
+    try:
+        import certifi
+    except ImportError:
+        # Source-only developer installations may not have build dependencies.
+        if getattr(sys, "frozen", False):
+            raise RuntimeError("Packaged certificate bundle missing")
+    else:
+        context.load_verify_locations(cafile=certifi.where())
+    return context
+
+
+def sourcing_certificate_error(exc):
+    reason = exc.reason if isinstance(exc, urllib.error.URLError) else exc
+    return reason if isinstance(reason, ssl.SSLCertVerificationError) else None
+
+
+def sourcing_verified_read(req):
+    # Normal HTTPS validation always applies. Use Windows' native chain
+    # builder only for missing-issuer errors; never retry invalid names,
+    # expired certificates, or explicitly distrusted certificates.
+    try:
+        with urllib.request.urlopen(req, timeout=12, context=sourcing_tls_context()) as response:
+            return response.read(8 * 1024 * 1024 + 1)
+    except (urllib.error.URLError, ssl.SSLCertVerificationError) as exc:
+        reason = sourcing_certificate_error(exc)
+        if sys.platform != "win32" or reason is None or reason.verify_code not in (2, 20, 21):
+            raise
+        try:
+            import truststore
+        except ImportError:
+            raise exc
+        native = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        native.check_hostname = True
+        native.verify_mode = ssl.CERT_REQUIRED
+        with urllib.request.urlopen(req, timeout=12, context=native) as response:
+            return response.read(8 * 1024 * 1024 + 1)
+
+
 def spansh_sourcing_rows(request, key):
     payload = spansh_sourcing_payload(request, key)
     req = urllib.request.Request(SPANSH_STATION_SEARCH,
         data=json.dumps(payload).encode("utf-8"), method="POST",
         headers={"Accept": "application/json", "Content-Type": "application/json",
                  "User-Agent": f"MongrelHUD/{APP_VERSION} (commodity sourcing)"})
-    with urllib.request.urlopen(req, timeout=12) as response:
-        raw = response.read(8 * 1024 * 1024 + 1)
+    raw = sourcing_verified_read(req)
     if len(raw) > 8 * 1024 * 1024:
         raise ValueError("market_response_too_large")
     return normalize_spansh_sourcing(json.loads(raw), request, key)
@@ -4740,6 +4781,10 @@ class MongrelHudApp:
                             detail = f"HTTP {exc.code}"
                             if exc.code in (401, 403, 429, 503):
                                 consecutive_errors = 2
+                        elif sourcing_certificate_error(exc) is not None:
+                            reason = sourcing_certificate_error(exc)
+                            detail = "TLS certificate validation failed (" + str(reason.verify_code) + ": " + str(reason.verify_message)[:160] + ")"
+                            consecutive_errors = 2
                         elif isinstance(exc, urllib.error.URLError):
                             if isinstance(exc.reason, socket.gaierror):
                                 detail = "DNS lookup failed"
@@ -9307,4 +9352,31 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--sourcing-self-test":
+        # Build-time diagnostic: no user data, no controller/Scout or GUI.
+        report = {}
+        try:
+            context = sourcing_tls_context()
+            report["trust"] = context.cert_store_stats()
+            report["hostnameVerification"] = context.check_hostname
+            report["certificateVerification"] = context.verify_mode == ssl.CERT_REQUIRED
+            import certifi
+            import truststore
+            report["bundlePresent"] = Path(certifi.where()).is_file()
+            report["nativeTrustAvailable"] = callable(truststore.SSLContext)
+            if not (report["bundlePresent"] and report["hostnameVerification"] and report["certificateVerification"] and report["nativeTrustAvailable"] and report["trust"]["x509_ca"] > 0):
+                raise RuntimeError("TLS packaging self-test failed")
+            report["ok"] = True
+            try:
+                rows = spansh_sourcing_rows({"system":"Sol","radius":10,"pad":3,"days":0,
+                    "needs":{"steel":{"name":"Steel","quantity":1}}}, "steel")
+                report["liveMarket"] = {"ok": True, "rows": len(rows)}
+            except Exception as exc:
+                reason = getattr(exc, "reason", exc)
+                report["liveMarket"] = {"ok": False, "error": str(reason)[:200]}
+        except Exception as exc:
+            report["ok"] = False
+            report["error"] = str(exc)[:200]
+        Path(sys.argv[2]).write_text(json.dumps(report), encoding="utf-8")
+        raise SystemExit(0 if report.get("ok") else 1)
     main()

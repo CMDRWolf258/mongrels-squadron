@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.23 — Verified sourcing HTTPS
+
+The standalone Windows package includes certifi's CA bundle and truststore's native Windows certificate validation. Commodity Sourcing uses Windows/OS roots plus the bundled public CA roots, with native Windows chain building only on missing-issuer errors. Hostname and certificate verification are always required; expired, wrong-host and revoked certificates are not bypassed. Reports now include the certificate verification code and reason. Windows packaging checks the actual frozen executable and runs a live public Spansh probe (probe availability is reported separately). No Scout update required.
+
 ## Mongrel HUD 0.18.22 — Spansh commodity sourcing
 
 Commodity Sourcing now uses the Spansh station search POST endpoint instead of Ardent Insight or EDData. It retains project, current and custom reference systems, all-material and single-material searches, age and landing pad filters, five-minute local caching, and explicit PC clipboard copying. The search omits market age filters for Any and continues to verify HTTPS certificates. The provider returns bounded nearby station candidates rather than an exhaustive galaxy-wide list. No Scout update required.

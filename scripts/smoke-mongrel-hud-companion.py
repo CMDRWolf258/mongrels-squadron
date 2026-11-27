@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.22"
+assert hud.APP_VERSION=="0.18.23"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -108,12 +108,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.19"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.20"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.21"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.22"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.23"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.23"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.24"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.23",
+    "name":"Mongrel HUD Windows v0.18.24",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.23" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.24" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -704,7 +705,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.22"
+    assert hud.APP_VERSION=="0.18.23"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -998,7 +999,8 @@ with mock.patch.object(hud.urllib.request,"urlopen",return_value=response) as fe
     assert call.args[0].full_url=="https://spansh.co.uk/api/stations/search"
     assert call.args[0].get_method()=="POST"
     assert hud.json.loads(call.args[0].data)==payload
-    assert "context" not in call.kwargs
+    assert call.kwargs["context"].verify_mode == hud.ssl.CERT_REQUIRED
+    assert call.kwargs["context"].check_hostname is True
 def fake_thread(target,**kwargs):
     return types.SimpleNamespace(start=target)
 app=object.__new__(hud.MongrelHudApp)
@@ -1017,3 +1019,27 @@ with mock.patch.object(hud,"spansh_sourcing_rows",side_effect=hud.urllib.error.U
     result=app.commodity_sourcing({"action":"search","reference":"custom","system":"Diaba","radius":0})
 assert result["status"]=="failed" and not result["results"] and result["diagnostics"]==["Spansh: DNS lookup failed"]
 print("✓ Spansh station query, market normalization, price direction, verified TLS defaults and sourcing worker")
+
+# Only missing-issuer errors may retry through Windows native trust.
+def cert_error(code,message):
+    e=hud.ssl.SSLCertVerificationError(1,message)
+    e.verify_code=code
+    e.verify_message=message
+    return hud.urllib.error.URLError(e)
+native_context=mock.MagicMock()
+fake_truststore=types.SimpleNamespace(SSLContext=mock.Mock(return_value=native_context))
+with mock.patch.dict(hud.sys.modules,{"truststore":fake_truststore}),mock.patch.object(hud.sys,"platform","win32"),mock.patch.object(hud,"sourcing_tls_context",return_value=mock.MagicMock()),mock.patch.object(hud.urllib.request,"urlopen",side_effect=[cert_error(20,"unable to get local issuer certificate"),response]) as fetch:
+    assert hud.spansh_sourcing_rows(req,"steel")==parsed
+    assert fetch.call_count==2
+    assert fetch.call_args.kwargs["context"] is native_context
+    assert native_context.check_hostname is True
+    assert native_context.verify_mode==hud.ssl.CERT_REQUIRED
+for code in (10,62,28):
+    with mock.patch.object(hud.sys,"platform","win32"),mock.patch.object(hud,"sourcing_tls_context",return_value=mock.MagicMock()),mock.patch.object(hud.urllib.request,"urlopen",side_effect=cert_error(code,"invalid certificate")) as fetch:
+        try:
+            hud.spansh_sourcing_rows(req,"steel")
+            raise AssertionError("invalid certificate accepted")
+        except hud.urllib.error.URLError:
+            pass
+        assert fetch.call_count==1
+print("✓ Verified TLS with narrow native Windows issuer recovery; expiry, mismatch and revocation are not bypassed")

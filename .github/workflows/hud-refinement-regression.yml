@@ -57,3 +57,23 @@ jobs:
           python scripts/test_surveyor_history.py
           python scripts/test_surveyor_eddiscovery_reference.py
           python scripts/test_surveyor_eddiscovery_bridge.py
+
+  sourcing-windows-https:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install certificate validation dependencies
+        run: python -m pip install --disable-pip-version-check certifi truststore
+      - name: Verify TLS configuration and probe live Spansh
+        shell: pwsh
+        run: |
+          python downloads/mongrel-hud/mongrel_hud.py --sourcing-self-test sourcing-tls-report.json
+          if ($LASTEXITCODE -ne 0) { throw "TLS self-test failed" }
+          Get-Content sourcing-tls-report.json
+          $check = Get-Content sourcing-tls-report.json -Raw | ConvertFrom-Json
+          if (-not $check.ok) { throw "TLS self-test failed" }
+          if (-not $check.liveMarket.ok) { Write-Warning "Live Spansh probe failed: $($check.liveMarket.error)" }
