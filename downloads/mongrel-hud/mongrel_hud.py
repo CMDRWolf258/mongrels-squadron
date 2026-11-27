@@ -55,7 +55,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.26"
+APP_VERSION = "0.18.27"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -2125,7 +2125,17 @@ DECK_ALIASES = {"CTRL":"LCTRL","CONTROL":"LCTRL","SHIFT":"LSHIFT","ALT":"LALT",
     "LEFTALT":"LALT","RIGHTALT":"RALT","ENTER":"RETURN","ESC":"ESCAPE","BACK":"BACKSPACE",
     "PGUP":"PAGEUP","PGDN":"PAGEDOWN","TILDE":"GRAVE","GRAVEACCENT":"GRAVE",
     "NUMPADPLUS":"NUMPADADD","NUMPADMINUS":"NUMPADSUBTRACT","NUMPADSTAR":"NUMPADMULTIPLY",
-    "NUMPADSLASH":"NUMPADDIVIDE","NUMPADPERIOD":"NUMPADDECIMAL"}
+    "NUMPADSLASH":"NUMPADDIVIDE","NUMPADPERIOD":"NUMPADDECIMAL",
+    "UPARROW":"UP","DOWNARROW":"DOWN","LEFTARROW":"LEFT","RIGHTARROW":"RIGHT",
+    "ARROWUP":"UP","ARROWDOWN":"DOWN","ARROWLEFT":"LEFT","ARROWRIGHT":"RIGHT",
+    "DEL":"DELETE","INS":"INSERT"}
+# Explicit physical set-1 scan codes for the dedicated navigation cluster.
+# The same low bytes on the numpad are NOT extended keys.
+DECK_EXTENDED_NAV_SCANS = {"INSERT":0x52,"DELETE":0x53,"HOME":0x47,"END":0x4F,
+    "PAGEUP":0x49,"PAGEDOWN":0x51,"UP":0x48,"DOWN":0x50,"LEFT":0x4B,"RIGHT":0x4D}
+DECK_NUMPAD_SCANS = {"NUMPAD0":0x52,"NUMPAD1":0x4F,"NUMPAD2":0x50,"NUMPAD3":0x51,
+    "NUMPAD4":0x4B,"NUMPAD5":0x4C,"NUMPAD6":0x4D,"NUMPAD7":0x47,"NUMPAD8":0x48,
+    "NUMPAD9":0x49,"NUMPADDECIMAL":0x53}
 def deck_key(value):
     value = str(value or "").strip().upper().removeprefix("KEY_")
     return DECK_ALIASES.get(value, value)
@@ -2231,6 +2241,16 @@ def deck_active_window():
         kernel.CloseHandle(handle)
     return None
 
+def deck_scan_code(key, map_virtual_key):
+    if key in DECK_EXTENDED_NAV_SCANS:
+        return DECK_EXTENDED_NAV_SCANS[key], 0x0009  # SCANCODE | EXTENDEDKEY
+    if key in DECK_NUMPAD_SCANS:
+        return DECK_NUMPAD_SCANS[key], 0x0008
+    scan = map_virtual_key(DECK_KEYS[key], 4)
+    if not scan:
+        raise ValueError("unsupported_keyboard_key")
+    return scan & 255, 8 | (1 if scan >> 8 == 0xE0 else 0)
+
 def deck_send(chord):
     if sys.platform!="win32":
         raise ValueError("windows_input_required")
@@ -2256,12 +2276,7 @@ def deck_send(chord):
     user.MapVirtualKeyW.restype=wintypes.UINT
     user.SendInput.argtypes=[wintypes.UINT,ctypes.POINTER(INPUT),ctypes.c_int]
     user.SendInput.restype=wintypes.UINT
-    scans=[]
-    for key in keys:
-        scan=user.MapVirtualKeyW(DECK_KEYS[key],4)
-        if not scan:
-            raise ValueError("unsupported_keyboard_key")
-        scans.append((scan&255,8|(1 if scan>>8==0xE0 else 0)))
+    scans=[deck_scan_code(key,user.MapVirtualKeyW) for key in keys]
     def event(scan,flags,up=False):
         item=INPUT(1,PAYLOAD(keyboard=KEYBD(0,scan,flags|(2 if up else 0),0,0)))
         return user.SendInput(1,ctypes.byref(item),ctypes.sizeof(INPUT))==1
@@ -2274,7 +2289,8 @@ def deck_send(chord):
             if not event(scan,flags):
                 raise ValueError("windows_input_blocked")
             pressed.append((scan,flags))
-        time.sleep(0.08)
+        # Allow cockpit UI polling to register dedicated navigation keys.
+        time.sleep(0.15 if keys[-1] in DECK_EXTENDED_NAV_SCANS else 0.08)
     finally:
         for scan,flags in reversed(pressed):
             if not event(scan,flags,True):

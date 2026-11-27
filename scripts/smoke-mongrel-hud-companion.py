@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.26"
+assert hud.APP_VERSION=="0.18.27"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -112,12 +112,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.23"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.24"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.25"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.26"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.27"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.27"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.28"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.27",
+    "name":"Mongrel HUD Windows v0.18.28",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.27" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.28" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -708,7 +709,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.26"
+    assert hud.APP_VERSION=="0.18.27"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -1115,4 +1116,28 @@ with mock.patch.object(hud,"deck_bindings",return_value=({"SetSpeedZero":"0"},"T
     assert deck_app.store.data["shipDeckOverrides"]["SetSpeedZero"]=="LCTRL+K"
     hud.MongrelHudApp.ship_deck(deck_app,{"action":"reset","id":"SetSpeedZero"})
     assert "SetSpeedZero" not in deck_app.store.data["shipDeckOverrides"]
-print("✓ Ship control deck preset selection, mapping validation and deliberate dispatch")
+# Elite's actual XML arrow names, plus dedicated navigation vs numpad keys.
+with tempfile.TemporaryDirectory() as tmp:
+    folder=Path(tmp)
+    (folder/"StartPreset.4.start").write_text("General\nFlight\nBuggy\nFoot\n")
+    (folder/"Flight.4.1.binds").write_text('<Root PresetName="Flight" MajorVersion="4" MinorVersion="1"/>')
+    xml='<Root PresetName="General" MajorVersion="4" MinorVersion="1">'+''.join(
+        f'<{action}><Primary Device="Keyboard" Key="Key_{key}"/></{action}>' for action,key in
+        (("UI_Up","UpArrow"),("UI_Down","DownArrow"),("UI_Left","LeftArrow"),("UI_Right","RightArrow"),
+         ("CyclePreviousPanel","Delete"),("CycleNextPanel","End")))+"</Root>"
+    (folder/"General.4.1.binds").write_text(xml)
+    imported,_=hud.deck_bindings(folder)
+    assert imported=={"UI_Up":"UP","UI_Down":"DOWN","UI_Left":"LEFT","UI_Right":"RIGHT","CyclePreviousPanel":"DELETE","CycleNextPanel":"END"}
+    assert hud.deck_chord("DEL")=="DELETE"
+# Even if Windows reports a non-extended scan code, force the correct
+# physical navigation key. Numpad keys remain distinct.
+def unexpected_mapping(*args):
+    raise AssertionError("dedicated key should not use virtual-key mapping")
+for key,scan in {"DELETE":0x53,"END":0x4F,"UP":0x48,"DOWN":0x50,"LEFT":0x4B,"RIGHT":0x4D,
+                 "HOME":0x47,"INSERT":0x52,"PAGEUP":0x49,"PAGEDOWN":0x51}.items():
+    assert hud.deck_scan_code(key,unexpected_mapping)==(scan,9)
+for key,scan in {"NUMPADDECIMAL":0x53,"NUMPAD1":0x4F,"NUMPAD8":0x48,"NUMPAD2":0x50,"NUMPAD4":0x4B,"NUMPAD6":0x4D}.items():
+    assert hud.deck_scan_code(key,unexpected_mapping)==(scan,8)
+assert hud.deck_scan_code("K",lambda vk,mode:0x25)==(0x25,8)
+assert hud.deck_scan_code("RALT",lambda vk,mode:0xE038)==(0x38,9)
+print("✓ Ship control deck preset selection, mapping validation, extended navigation keys and deliberate dispatch")

@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.27 — Cockpit navigation keyboard fix
+
+Recognizes Elite's UpArrow, DownArrow, LeftArrow and RightArrow binding names and explicitly sends dedicated navigation cluster scan codes with the extended-key flag, distinct from numpad equivalents. Dedicated navigation keys use a slightly longer 150 ms tap; normal keyboard input is unchanged. Existing mappings and Scout are unchanged. Live in-game validation is required.
+
 ## Mongrel HUD 0.18.26 — Ship Control Panel (first test build)
 
 The paired iPad controller now has a separate Control Panel tab with Navigation, Camera and Combat profiles. Active local Elite keyboard bindings are read from StartPreset and .binds XML files, never modified. Sync reads again; manual keyboard chord overrides are saved locally and resettable. Only individual mapped actions are sent, with foreground executable verification and short scan-code presses. Unmapped/HOTAS-only actions remain disabled until a keyboard binding is set. Docking and autodock/launch menu actions are manual taps; no automated sequences. Windows/game delivery and actual active presets need live testing. Scout unchanged.
