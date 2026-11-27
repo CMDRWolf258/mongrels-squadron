@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.18"
+APP_VERSION = "0.18.19"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -222,7 +222,7 @@ PANEL_TITLES = {
     "subsystems": "TARGET LOADOUT",
     "bounties": "BOUNTIES",
     "cargo": "CARGO",
-    "colonization": "COLONIZATION CART",
+    "colonization": "COLONIZATION LOGISTICS",
     "surface": "SURFACE NAVIGATION",
     "miningintel": "MINING INTEL",
     "surveyor": "EXPEDITION TELEMETRY",
@@ -6960,16 +6960,30 @@ class MongrelHudApp:
     def _render_colonization_canvas(self, canvas: tk.Canvas, scale: float) -> tuple[int, int]:
         data = self.snapshot.data.get("colonization") or {}
         ship, carrier = bool(data.get("showShip")), bool(data.get("showCarrier"))
-        width = int((300 + 68 * ship + 68 * carrier) * scale)
-        y = self._draw_title(canvas, "COLONIZATION CART", scale, width)
+        projects = data.get("projects") or []
+        labels = []
+        for project in projects:
+            name = str(project.get("name") or project.get("id") or "")
+            build_type = str(project.get("buildType") or "").strip()
+            labels.append(f"{name} ({build_type})" if build_type else name)
+        # Measure the complete header and facility labels in the actual HUD
+        # font. Keep each cargo column additive and the right edge anchored.
+        base_width = int(300 * scale)
+        for label, size in [("COLONIZATION LOGISTICS", 15)] + [(label, 10) for label in labels]:
+            item = canvas.create_text(0, 0, text=label, anchor="nw", font=self._panel_font(scale, size, True))
+            bounds = canvas.bbox(item)
+            canvas.delete(item)
+            if bounds:
+                base_width = max(base_width, bounds[2] - bounds[0] + round(24 * scale))
+        width = base_width + round(68 * scale) * (ship + carrier)
+        y = self._draw_title(canvas, "COLONIZATION LOGISTICS", scale, width)
         pad, step = 10 * scale, 17 * scale
         def line(label, color=HUD_WHITE, bold=False):
             nonlocal y
             self._draw_text(canvas, pad, y, label, scale, 10, color, bold)
             y += step
-        projects = data.get("projects") or []
-        for project in projects:
-            line(self.clip_line(project.get("name") or project.get("id"), 48), HUD_CYAN, True)
+        for label in labels:
+            line(label, HUD_CYAN, True)
         def warning_footer():
             # Reserve both warning rows even when healthy. Nothing above
             # them moves when either warning appears or clears.
