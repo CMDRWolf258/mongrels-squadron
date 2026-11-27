@@ -1128,7 +1128,7 @@ async function surveyorAction(action,value){
   }catch(e){setText(el("surveyorExpeditionNotice"),"Surveyor command failed · "+e.message);}
 }
 
-var ravenManualRefresh=null;
+var ravenManualRefresh=null,ravenManualNoticeUntil=0;
 function renderRavenCart(){
   var cart=(state&&state.scout&&state.scout.colonization)||{}, enabled=!!cart.enabled;
   // Automatic polling stays silent. A persistent warning is not a refresh notification.
@@ -1137,11 +1137,14 @@ function renderRavenCart(){
   if(ravenManualRefresh&&ravenManualRefresh.requested&&!cart.refreshing&&(cart.error||cart.updatedAt!==ravenManualRefresh.before&&cart.updatedAt)){
     setText(el("ravenNotice"),cart.error?"Refresh failed · "+cart.error:"Raven refreshed");
     ravenManualRefresh=null;
+    ravenManualNoticeUntil=Date.now()+5000;
   }
   if(ravenManualRefresh&&Date.now()-ravenManualRefresh.started>120000){
     setText(el("ravenNotice"),"Refresh not confirmed · check Raven status");
     ravenManualRefresh=null;
+    ravenManualNoticeUntil=Date.now()+5000;
   }
+  if(!ravenManualRefresh&&ravenManualNoticeUntil&&Date.now()>=ravenManualNoticeUntil){setText(el("ravenNotice"),"");ravenManualNoticeUntil=0}
   el("ravenMode").value=cart.mode||"continuous";
   el("ravenSource").value=cart.source||"raven";
   ["ravenMode","ravenSource","ravenRefresh"].forEach(function(id){el(id).disabled=!enabled||!state.connected||(id==="ravenRefresh"&&!!ravenManualRefresh)});
@@ -1157,7 +1160,7 @@ async function ravenAction(body){
   if(manual){
     if(ravenManualRefresh)return;
     var cart=(state&&state.scout&&state.scout.colonization)||{};
-    ravenManualRefresh={before:cart.updatedAt,started:Date.now(),requested:false};
+    ravenManualRefresh={before:cart.updatedAt,started:Date.now(),requested:false};ravenManualNoticeUntil=0;
     setText(el("ravenNotice"),"Refreshing Raven…");
     renderRavenCart();
   }
@@ -1168,6 +1171,7 @@ async function ravenAction(body){
     await load(true);
   }catch(e){
     if(manual)ravenManualRefresh=null;
+    ravenManualNoticeUntil=Date.now()+5000;
     setText(el("ravenNotice"),"Raven control failed · "+e.message);
     renderRavenCart();
   }
