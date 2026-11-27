@@ -54,12 +54,13 @@ function harness() {
       }, addEventListener() {}, activeElement: null,
     },
     confirm(){return true},
+    setTimeout,clearTimeout,
     fetch(path, options) {
       return new Promise(resolve => requests.push({ path, body: options.body === undefined ? null : JSON.parse(options.body), resolve }));
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -901,3 +902,48 @@ console.log("✓ Quiet background Raven refresh, manual-only feedback and stable
   assert.ok(output.indexOf("Stop 1 · Rare")<output.indexOf("Alternative stations"));
   assert.ok(output.indexOf("Alternative stations")<output.indexOf("Common"));
 }
+
+{
+  const h=harness();
+  const ids=["SetSpeedZero","SetSpeed25","SetSpeed50","SetSpeed75","SetSpeed100","UI_Up","UI_Down","UI_Left","UI_Right","UI_Select","UI_Back","UseBoostJuice"];
+  const actions=ids.map(id=>({id,label:id,binding:"K",profile:"Navigation",group:"Test",origin:"imported"}));
+  h.controller.setDeck(actions);
+  const display=h.node("deckControls").innerHTML;
+  assert.match(display,/deck-nav-layout/);
+  assert.match(display,/deck-dpad/);
+  assert.ok(display.indexOf('data-deck-send="SetSpeed100"')<display.indexOf('data-deck-send="SetSpeedZero"'));
+  for(const id of ids)assert.equal(display.split('data-deck-send="'+id+'"').length,2);
+  assert.equal(h.controller.deckEnqueue("UI_Up",false),true);
+  assert.equal(h.controller.deckEnqueue("UI_Down",false),true);
+  assert.equal(h.controller.deckEnqueue("UI_Left",false),true);
+  assert.equal(h.controller.deckEnqueue("UI_Up",true),false,"repeat never queues");
+  await drain(h,ids.slice(5,8).map(id=>({path:"/api/ship-deck",body:{action:"send",id,binding:"K"}})));
+  assert.equal(h.requests.length,3);
+}
+{
+  const h=harness();
+  h.controller.setDeck([{id:"UI_Up",label:"Up",binding:"UP",profile:"Navigation",group:"UI",origin:"imported"}]);
+  const button={disabled:false,getAttribute:()=>"UI_Up",classList:{add(){},remove(){}}};
+  assert.equal(h.controller.deckStartHold(button,1),true);
+  await tick();
+  assert.equal(h.requests.length,1);
+  h.respond(h.requests[0]);
+  await tick();
+  await new Promise(resolve=>setTimeout(resolve,390));
+  assert.equal(h.requests.length,2,"hold repeats once after threshold");
+  h.controller.deckStopHold(1);
+  h.respond(h.requests[1]);
+  await new Promise(resolve=>setTimeout(resolve,180));
+  assert.equal(h.requests.length,2,"release stops further commands");
+}
+{
+  const h=harness();
+  h.controller.setDeck([{id:"UI_Up",label:"Up",binding:"UP",profile:"Navigation",group:"UI",origin:"imported"}]);
+  h.controller.deckEnqueue("UI_Up",false);
+  h.controller.deckEnqueue("UI_Up",false);
+  h.controller.deckCancelInputs();
+  h.respond(h.requests[0]);
+  await tick();
+  assert.equal(h.requests.length,1,"pending input discarded on context change");
+}
+console.log("✓ Ship deck cross layout, ordered rapid taps, no repeat backlog and release cancellation");

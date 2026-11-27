@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.28 — iPad cockpit layout and responsive controls
+
+Navigation now presents a descending vertical throttle column beside a physical D-pad and cockpit panel/tab buttons, with adjacent flight and ship system groups on wide displays and responsive rearrangement on narrow screens. Camera and Combat use grouped backlit controls; edit mode retains binding details. The PC caches the last imported active bindings until explicit sync or reopening the deck; manual edits persist. Rapid taps use a four-pending-command FIFO with 500 ms expiry and stop on context changes or delivery failure. Direction and previous/next tab buttons repeat while held after 350 ms, at most one in-flight repeat, nominal 125 ms interval limited by input duration and network. Release/cancel/blur/offline stops further repeats; a chord already sent may finish. Other actions remain single-tap. No multi-action macros. Scout unchanged; live iPad/Elite verification required.
+
 ## Mongrel HUD 0.18.27 — Cockpit navigation keyboard fix
 
 Recognizes Elite's UpArrow, DownArrow, LeftArrow and RightArrow binding names and explicitly sends dedicated navigation cluster scan codes with the extended-key flag, distinct from numpad equivalents. Dedicated navigation keys use a slightly longer 150 ms tap; normal keyboard input is unchanged. Existing mappings and Scout are unchanged. Live in-game validation is required.
