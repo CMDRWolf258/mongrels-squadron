@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.17 — Steady colonization cart
+
+Automatic Raven refreshes no longer interrupt the controller list or desktop cart. Manual refresh feedback appears below the project list and clears after five seconds; connection and reporting warnings remain visible at the bottom. The cart preserves its right edge when ship/carrier columns appear or disappear. Existing positions migrate on the first visible render; unlock the overlay and drag once to set a new right edge. Scout 1.14.8 is unchanged. Raven reads and reports go directly from Scout to Raven, not via the squad site.
+
 ## Mongrel HUD 0.18.16 — Raven controller sizing
 
 Larger touch-friendly visibility and build-selection dropdowns, full-width Refresh Raven button, and readable sync diagnostics. Update Scout to 1.14.8 alongside HUD.
