@@ -54,7 +54,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.20"
+APP_VERSION = "0.18.21"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1726,6 +1726,8 @@ class ScoutSnapshot:
 # squad site. The source endpoint excludes the reference system from nearby
 # searches, so query its complete export list once as well.
 ARDENT_ROOT = "https://api.ardent-insight.com/v2"
+EDDATA_ROOT = "https://api.eddata.dev/v2"
+SOURCING_PROVIDERS = {"Ardent Insight": ARDENT_ROOT, "EDData": EDDATA_ROOT}
 SOURCING_TTL = 300
 SOURCING_MAX_MATERIALS = 40
 
@@ -1733,7 +1735,7 @@ def sourcing_request(state, body):
     cart = state.get("colonization") or {}
     if not cart.get("enabled") or not cart.get("projects"):
         raise ValueError("select_raven_projects_first")
-    systems = sorted({str(p.get("system") or "") for p in cart["projects"] if p.get("system")})
+    systems = sorted({str(p.get("system") or "") for p in (cart.get("projects") or []) + (cart.get("availableProjects") or []) if p.get("system")})
     reference = body.get("reference", "project")
     if reference == "current":
         system = (state.get("system") or {}).get("name")
@@ -1741,6 +1743,8 @@ def sourcing_request(state, body):
         system = body.get("system") or (systems[0] if len(systems) == 1 else None)
         if system not in systems:
             raise ValueError("select_construction_system")
+    elif reference == "custom":
+        system = body.get("system")
     else:
         raise ValueError("invalid_reference")
     system = _validate_clipboard_system_name(system)
@@ -1749,7 +1753,7 @@ def sourcing_request(state, body):
         raise ValueError("invalid_search_radius")
     if type(pad) is not int or pad not in (1, 2, 3):
         raise ValueError("invalid_pad_size")
-    if type(days) is not int or days not in (1, 3, 7, 30):
+    if type(days) is not int or days not in (0, 1, 3, 7, 30):
         raise ValueError("invalid_market_age")
     commodity = body.get("commodity", "all")
     needs = {}
@@ -1778,14 +1782,16 @@ def sourcing_request(state, body):
     return {"system": system, "radius": radius, "pad": pad, "days": days,
             "needs": needs, "provisional": provisional}
 
-def ardent_export_rows(path):
-    request = urllib.request.Request(ARDENT_ROOT + path, headers={"Accept": "application/json", "User-Agent": "MongrelHUD/commodity-sourcing"})
+def ardent_export_rows(path, provider="Ardent Insight"):
+    request = urllib.request.Request(SOURCING_PROVIDERS[provider] + path, headers={"Accept": "application/json", "User-Agent": f"MongrelHUD/{APP_VERSION} (commodity sourcing)"})
     with urllib.request.urlopen(request, timeout=15) as response:
         raw = response.read(8 * 1024 * 1024 + 1)
     if len(raw) > 8 * 1024 * 1024:
         raise ValueError("market_response_too_large")
     result = json.loads(raw)
     if not isinstance(result, list):
+        if result == "No exported commodities":
+            return []
         raise ValueError("unexpected_market_response")
     return result
 
@@ -1817,7 +1823,7 @@ def aggregate_sourcing(request, batches):
                 if stamp.tzinfo is None:
                     stamp = stamp.replace(tzinfo=timezone.utc)
                 age = (datetime.now(timezone.utc) - stamp).total_seconds()
-                if not -300 <= age <= request["days"] * 86400:
+                if age < -300 or (request["days"] and age > request["days"] * 86400):
                     continue
             except (ValueError, TypeError, OverflowError):
                 continue
@@ -1831,7 +1837,8 @@ def aggregate_sourcing(request, batches):
             if old and old["updatedAt"] >= stamp.isoformat():
                 continue
             item["materials"][key] = {"key": key, "name": needs[key]["name"], "need": needs[key]["quantity"],
-                "stock": stock, "price": price, "updatedAt": stamp.isoformat()}
+                "stock": stock, "price": price, "updatedAt": stamp.isoformat(),
+                "provider": row.get("_sourcingProvider", "Ardent Insight")}
     results = []
     for item in stations.values():
         materials = sorted(item["materials"].values(), key=lambda r: r["name"].casefold())
@@ -4640,52 +4647,90 @@ class MongrelHudApp:
                                  "done": 0, "total": len(request["needs"]) + 1 if request["radius"] else 1}
         def worker():
             system = "/system/name/" + quote(request["system"], safe="")
-            params = {"fleetCarriers": "false", "maxDaysAgo": request["days"], "minVolume": 1}
-            jobs = [(system + "/commodities/exports?" + urlencode(params), True, "reference system")]
+            jobs = [(system + "/commodities/exports", True, "reference system")]
             if request["radius"]:
-                params.update({"maxDistance": request["radius"], "sort": "distance"})
-                jobs.extend((system + "/commodity/name/" + quote(key, safe="") + "/nearby/exports?" + urlencode(params), False, key)
+                jobs.extend((system + "/commodity/name/" + quote(key, safe="") + "/nearby/exports", False, key)
                             for key in request["needs"])
-            batches, errors = [], []
-            # Sequential bounded requests and a five-minute cache, shared by
-            # controller searches; never poll the provider automatically.
+            batches, errors, diagnostics = [], [], []
+            used_providers = set()
+            unavailable = set()
+            deadline = time.monotonic() + 100
+            preferred = "Ardent Insight"
+            def explain(exc):
+                if isinstance(exc, urllib.error.HTTPError):
+                    return f"HTTP {exc.code}"
+                if isinstance(exc, urllib.error.URLError):
+                    if isinstance(exc.reason, socket.gaierror):
+                        return "DNS lookup failed"
+                    if isinstance(exc.reason, TimeoutError):
+                        return "Connection timed out"
+                    if "CERTIFICATE_VERIFY_FAILED" in str(exc.reason):
+                        return "TLS certificate validation failed"
+                    return "Network connection failed"
+                if isinstance(exc, TimeoutError):
+                    return "Request timed out"
+                if isinstance(exc, (ValueError, UnicodeError)):
+                    return "Invalid or unexpected market response"
+                return "Market request failed"
             try:
-                deadline = time.monotonic() + 90
-                for index, (path, local, label) in enumerate(jobs):
-                    if time.monotonic() >= deadline:
+                for index, (base_path, local, label) in enumerate(jobs):
+                    if time.monotonic() >= deadline or len(unavailable) == len(SOURCING_PROVIDERS):
                         errors.extend(job[2] for job in jobs[index:])
                         break
-                    try:
-                        cached = self.sourcing_cache.get(path)
-                        if cached and time.monotonic() - cached[0] < SOURCING_TTL:
-                            rows = cached[1]
-                        else:
-                            rows = ardent_export_rows(path)
-                            if len(self.sourcing_cache) >= 32:
-                                self.sourcing_cache.pop(next(iter(self.sourcing_cache)))
-                            self.sourcing_cache[path] = (time.monotonic(), rows)
-                        batches.append((rows, local))
-                    except urllib.error.HTTPError as exc:
-                        errors.append(label)
-                        if exc.code in (429, 503):
-                            errors.extend(job[2] for job in jobs[index + 1:])
+                    success = False
+                    for provider in (preferred, next(p for p in SOURCING_PROVIDERS if p != preferred)):
+                        if provider in unavailable or time.monotonic() >= deadline:
+                            continue
+                        # Ardent defaults to 30 days when omitted. Request a
+                        # window predating Elite's launch for Any. EDData
+                        # documents a hard maximum of 14 days.
+                        days = request["days"] or 10000
+                        if provider == "EDData":
+                            days = min(days, 14)
+                        params = {"fleetCarriers": "false", "maxDaysAgo": days, "minVolume": 1}
+                        if not local:
+                            params.update({"maxDistance": request["radius"], "sort": "distance"})
+                        path = base_path + "?" + urlencode(params)
+                        cache_key = (provider, path)
+                        try:
+                            cached = self.sourcing_cache.get(cache_key)
+                            if cached and time.monotonic() - cached[0] < SOURCING_TTL:
+                                rows = cached[1]
+                            else:
+                                rows = ardent_export_rows(path, provider)
+                                if len(self.sourcing_cache) >= 32:
+                                    self.sourcing_cache.pop(next(iter(self.sourcing_cache)))
+                                self.sourcing_cache[cache_key] = (time.monotonic(), rows)
+                            batches.append(([{**row, "_sourcingProvider": provider} for row in rows if isinstance(row, dict)], local))
+                            used_providers.add(provider)
+                            preferred = provider
+                            success = True
                             break
-                    except Exception:
+                        except Exception as exc:
+                            detail = explain(exc)
+                            entry = f"{provider}: {detail}"
+                            if entry not in diagnostics:
+                                diagnostics.append(entry)
+                            # A provider-wide failure shouldn't be repeated for
+                            # every material. A 404 for the reference system
+                            # also means that provider cannot search around it.
+                            if not isinstance(exc, urllib.error.HTTPError) or exc.code in (401,403,404,429,500,502,503,504):
+                                unavailable.add(provider)
+                    if not success:
                         errors.append(label)
-                        # Do not hammer an unavailable service with dozens of requests.
-                        if not batches and len(errors) >= 2:
-                            errors.extend(job[2] for job in jobs[index + 1:])
-                            break
                     with self.sourcing_lock:
                         self.sourcing_job["done"] += 1
                 results = aggregate_sourcing(request, batches)
                 with self.sourcing_lock:
                     self.sourcing_job.update({"status": "complete" if batches else "failed",
-                        "results": results, "failedQueries": errors,
+                        "results": results, "failedQueries": errors, "diagnostics": diagnostics,
+                        "providers": sorted(used_providers),
+                        "providerAgeLimited": "EDData" in used_providers and (not request["days"] or request["days"] > 14),
                         "completedAt": datetime.now(timezone.utc).isoformat()})
             except Exception:
                 with self.sourcing_lock:
-                    self.sourcing_job.update({"status": "failed", "results": [], "failedQueries": ["market search"]})
+                    self.sourcing_job.update({"status": "failed", "results": [], "failedQueries": ["market search"],
+                                              "diagnostics": ["Unable to process market search results"]})
         threading.Thread(target=worker, name="MongrelCommoditySourcing", daemon=True).start()
         with self.sourcing_lock:
             return {"ok": True, **self.sourcing_job}
