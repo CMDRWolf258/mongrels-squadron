@@ -1145,3 +1145,22 @@ console.log("✓ Raven facility image types, source attribution and schematic fa
   assert.match(c.dataStation({type:"Settlement",name:"Unknown"},true),/Specific construction design not reported/);
 }
 console.log("✓ Exact Raven surface design photos and no misleading generic fallback");
+
+{
+  const h=harness(),c=h.controller;
+  for(const [type,key] of [["Industrial Outpost","vulcan"],["Commercial Outpost","plutus"],["Military Outpost","nemesis"],["Scientific Outpost","prometheus"],["Pirate Outpost","dysnomia"],["Civilian Outpost","vesta"]]){
+    assert.equal(c.ravenFacilityRef({type}).key,key);
+    assert.equal(c.ravenFacilityRef({type}).exact,false);
+  }
+  assert.equal(c.ravenFacilityRef({type:"Outpost",primaryEconomy:"Industrial"}).key,"vulcan");
+  assert.equal(c.ravenFacilityRef({type:"Orbital Outpost",primaryEconomy:"Military"}).key,"nemesis");
+  assert.equal(c.ravenFacilityRef({type:"Outpost",primaryEconomy:"High Tech"}).key,"prometheus");
+  assert.equal(c.ravenFacilityRef({type:"Outpost"}).key,"vesta");
+  assert.equal(c.ravenFacilityRef({type:"Outpost",primaryEconomy:"Military",buildType:"plutus",buildTypeSource:"Raven Colonial"}).key,"plutus");
+  for(const type of ["Planetary Outpost","Surface Outpost","Crater Outpost","Ground Outpost","Settlement"]){assert.equal(c.ravenFacilityRef({type,primaryEconomy:"Industrial"}),null);}
+  assert.equal(c.ravenFacilityRef({type:"Surface Outpost",buildType:"bia",buildTypeSource:"Raven Colonial"}).key,"bia");
+  const html=c.dataStation({name:"Example",type:"Outpost",primaryEconomy:"Industrial"},true);
+  assert.match(html,/facility-image\?type=vulcan/);
+  assert.match(html,/Actual design unknown/);
+}
+console.log("✓ Orbital outpost photos restored; exact Raven matches preserved and surface guesses excluded");
