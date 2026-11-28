@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.35"
+assert hud.APP_VERSION=="0.18.36"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -121,12 +121,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.32"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.33"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.34"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.35"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.36"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.36"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.37"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.36",
+    "name":"Mongrel HUD Windows v0.18.37",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.36" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.37" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -717,7 +718,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.35"
+    assert hud.APP_VERSION=="0.18.36"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -1209,3 +1210,33 @@ finally:
     hud.sourcing_verified_read = old_read
     hud._raven_photo_cache.clear()
 print("✓ Raven screenshot allowlist, fixed source and cache")
+
+raven_sys = {"name":"Test","id64":123,"bodies":[{"num":1,"name":"Test 1"}],"sites":[
+    {"name":"Iron Mine","marketId":1001,"bodyNum":1,"buildType":"ourea","status":"complete"},
+    {"name":"Botanical Farm","marketId":1002,"bodyNum":1,"buildType":"annona","status":"complete"},
+    {"name":"Research Base","marketId":0,"bodyNum":1,"buildType":"chronos","status":"complete"},
+    {"name":"Future","marketId":1004,"buildType":"ares","status":"plan"},
+    {"name":"Unconfirmed","marketId":1005,"buildType":"annona?","status":"complete"},
+    {"name":"Wrong ID","marketId":9999,"buildType":"minerva","status":"complete"}]}
+designs = hud.raven_completed_designs(raven_sys,"Test","123")
+assert len(designs)==4
+report = {"stations":[
+    {"name":"Renamed Mine","marketId":"1001","type":"Settlement","body":"Test 1"},
+    {"name":"Botanical Farm","marketId":"1002","type":"Settlement","body":"Test 1"},
+    {"name":"Research Base","marketId":"1003","type":"Settlement","body":"Test 1"},
+    {"name":"Future","marketId":"1004","type":"Settlement"},
+    {"name":"Unconfirmed","marketId":"1005","type":"Settlement"},
+    {"name":"Wrong ID","marketId":"1006","type":"Settlement"}]}
+assert hud.apply_raven_designs(report,designs)==3
+assert [s.get("buildType") for s in report["stations"]]==["ourea","annona","chronos",None,None,None]
+try:
+    hud.raven_completed_designs(raven_sys,"Other","123")
+    raise AssertionError("wrong system accepted")
+except ValueError:
+    pass
+assert hud.raven_completed_designs([{"buildName":"Mine","buildType":"ourea","complete":True,"systemName":"Test","marketId":1001}],"Test","123",legacy=True)[0]["buildType"]=="ourea"
+with mock.patch.object(hud,"sourcing_verified_read",return_value=json.dumps(raven_sys).encode()) as lookup:
+    out=hud.enrich_display_raven(report,"Test","123")
+    assert out["ravenDesigns"]["matched"]==3
+    assert lookup.call_args.args[0].full_url=="https://ravencolonial.net/api/v2/system/123"
+print("✓ Completed Raven system facility identities, market ID matching, name fallback and uncertain design rejection")

@@ -55,7 +55,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.35"
+APP_VERSION = "0.18.36"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -2062,7 +2062,7 @@ def display_system_dump(payload, name, address):
         key = mid if mid.isdecimal() else n.casefold()
         pads = s.get("landingPads")
         pads = {k: display_number(pads.get(k)) for k in ("small", "medium", "large")} if isinstance(pads, dict) else {}
-        row = {"name": n, "type": display_text(s.get("type")), "buildType": display_text(s.get("buildType")), "body": body,
+        row = {"name": n, "type": display_text(s.get("type")), "buildType": display_text(s.get("buildType")), "marketId": mid if mid.isdecimal() else "", "body": body,
                "distance": display_number(s.get("distanceToArrival")),
                "faction": label(s.get("controllingFaction")), "factionState": label(s.get("controllingFactionState")), "allegiance": label(s.get("allegiance")),
                "government": label(s.get("government")), "primaryEconomy": label(s.get("primaryEconomy") or s.get("economy")),
@@ -2126,6 +2126,107 @@ def display_system_dump(payload, name, address):
             "bodies": bodies}
 
 
+def raven_design_key(value):
+    key = display_text(value).casefold().removesuffix(" (primary)").strip()
+    key = {"no truss": "no_truss", "coriolis": "no_truss", "orbis": "apollo"}.get(key, key)
+    # A question mark means the Raven architect has not confirmed the design.
+    return key if key in RAVEN_FACILITY_IMAGES else ""
+
+
+def raven_completed_designs(payload, name, address, *, legacy=False):
+    """Read the public system design, not the commander's active-project cart."""
+    if legacy:
+        if not isinstance(payload, list):
+            raise ValueError("raven_invalid_completed_sites")
+        sites = payload
+        body_names = {}
+    else:
+        if not isinstance(payload, dict) or str(payload.get("id64")) != address or display_text(payload.get("name")).casefold() != name.casefold():
+            raise ValueError("raven_system_identity_mismatch")
+        sites = payload.get("sites")
+        if not isinstance(sites, list):
+            raise ValueError("raven_invalid_sites")
+        body_names = {b.get("num"): display_text(b.get("name")) for b in (payload.get("bodies") or []) if isinstance(b, dict) and isinstance(b.get("num"), int)}
+    records = []
+    for site in sites[:1000]:
+        if not isinstance(site, dict):
+            continue
+        if legacy:
+            if site.get("complete") is not True or site.get("isMock") is True or display_text(site.get("systemName")).casefold() != name.casefold():
+                continue
+            if site.get("systemAddress") is not None and str(site["systemAddress"]) != address:
+                continue
+            label = display_text(site.get("buildName"))
+            body = display_text(site.get("bodyName"))
+        else:
+            if site.get("status") != "complete":
+                continue
+            label = display_text(site.get("name"))
+            body = body_names.get(site.get("bodyNum"), "")
+        kind = raven_design_key(site.get("buildType"))
+        mid = str(site.get("marketId") or "")
+        mid = mid if mid.isdecimal() and int(mid)>0 else ""
+        if label and kind:
+            records.append({"name": label, "marketId": mid, "body": body, "buildType": kind})
+    return records
+
+
+def apply_raven_designs(report, records):
+    stations = report.get("stations") or []
+    matched = 0
+    def fold(value):
+        return " ".join(display_text(value).casefold().split())
+    for station in stations:
+        kind = fold(station.get("type"))
+        if any(x in kind for x in ("carrier", "megaship", "mega ship", "construction", "depot")):
+            continue
+        mid = station.get("marketId") or ""
+        by_id = [r for r in records if mid and r["marketId"] == mid]
+        if by_id:
+            candidates = by_id
+        else:
+            # Never match a conflicting market ID by name. Require a unique
+            # same-system name and compatible reported host body.
+            candidates = [r for r in records if fold(r["name"]) == fold(station.get("name"))
+                          and not (mid and r["marketId"] and mid != r["marketId"])
+                          and not (r["body"] and station.get("body") and fold(r["body"]) != fold(station["body"]))]
+            if sum(fold(s.get("name")) == fold(station.get("name")) for s in stations) != 1:
+                candidates = []
+        types = {r["buildType"] for r in candidates}
+        if len(types) == 1:
+            station["buildType"] = next(iter(types))
+            station["buildTypeSource"] = "Raven Colonial"
+            matched += 1
+    return matched
+
+
+def enrich_display_raven(report, name, address):
+    """Optional public read; an unavailable Raven service never removes Spansh data."""
+    # Official Raven web client uses this read-only v2 system endpoint.
+    url = "https://ravencolonial.net/api/v2/system/" + address
+    headers = {"Accept": "application/json", "User-Agent": f"MongrelHUD/{APP_VERSION} (facility identification)"}
+    try:
+        raw = sourcing_verified_read(urllib.request.Request(url, headers=headers))
+        if len(raw) > 8*1024*1024:
+            raise ValueError("raven_response_too_large")
+        records = raven_completed_designs(json.loads(raw), name, address)
+        report["ravenDesigns"] = {"status": "available", "matched": apply_raven_designs(report, records), "reported": len(records)}
+    except (OSError, ValueError, RuntimeError):
+        # Older systems may still expose completed project refs via the
+        # documented legacy endpoint; do not import or mutate Raven.
+        try:
+            from urllib.parse import quote
+            url = "https://ravencolonial.net/api/system/" + quote(name, safe="") + "/complete"
+            raw = sourcing_verified_read(urllib.request.Request(url, headers=headers))
+            if len(raw) > 8*1024*1024:
+                raise ValueError("raven_response_too_large")
+            records = raven_completed_designs(json.loads(raw), name, address, legacy=True)
+            report["ravenDesigns"] = {"status": "available", "matched": apply_raven_designs(report, records), "reported": len(records)}
+        except (OSError, ValueError, RuntimeError):
+            report["ravenDesigns"] = {"status": "unavailable", "matched": 0}
+    return report
+
+
 def fetch_display_system(name, address):
     if not address.isascii() or not address.isdecimal() or len(address)>20:
         raise ValueError("system_address_unavailable")
@@ -2134,7 +2235,7 @@ def fetch_display_system(name, address):
     raw = sourcing_verified_read(req)
     if len(raw)>8*1024*1024:
         raise ValueError("system_response_too_large")
-    return display_system_dump(json.loads(raw), name, address)
+    return enrich_display_raven(display_system_dump(json.loads(raw), name, address), name, address)
 
 
 def spansh_sourcing_rows(request, key):

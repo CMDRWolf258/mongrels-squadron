@@ -1132,3 +1132,16 @@ console.log("✓ Independent module assignments, native control reparenting, sav
   assert.match(html,/data-raven-fallback/);
 }
 console.log("✓ Raven facility image types, source attribution and schematic fallback");
+
+{
+  const h=harness(),c=h.controller;
+  assert.equal(c.ravenFacilityRef({type:"Settlement"}),null);
+  assert.equal(c.ravenFacilityRef({type:"Planetary Outpost"}),null);
+  assert.equal(c.ravenFacilityRef({type:"Installation"}),null);
+  assert.equal(c.ravenFacilityRef({name:"Iron Mine",type:"Settlement",buildType:"ourea",buildTypeSource:"Raven Colonial"}).key,"ourea");
+  assert.equal(c.ravenFacilityRef({name:"Farm",type:"Settlement",buildType:"annona",buildTypeSource:"Raven Colonial"}).key,"annona");
+  assert.match(c.dataStation({type:"Settlement",name:"Iron Mine",buildType:"ourea",buildTypeSource:"Raven Colonial"},true),/facility-image\?type=ourea/);
+  assert.match(c.dataStation({type:"Settlement",name:"Farm",buildType:"annona",buildTypeSource:"Raven Colonial"},true),/facility-image\?type=annona/);
+  assert.match(c.dataStation({type:"Settlement",name:"Unknown"},true),/Specific construction design not reported/);
+}
+console.log("✓ Exact Raven surface design photos and no misleading generic fallback");
