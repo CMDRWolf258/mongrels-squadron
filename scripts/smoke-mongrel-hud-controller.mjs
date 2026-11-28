@@ -60,7 +60,7 @@ function harness() {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,dataBody,dataSignalLabel,setDataFocus,openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,dataBody,dataStation,dataFaction,dataOperations,dataSignalLabel,setDataFocus,openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -984,3 +984,27 @@ console.log("✓ Data display station detail, type artwork and system scope");
 assert.match(html,/grid-template-rows:repeat\(2,minmax\(0,1fr\)\)/);
 assert.match(html,/height:100dvh/);
 console.log("✓ Fixed data viewport, expand controls, compact planet labels and signal localization");
+
+{
+  const h=harness();
+  assert.match(html,/\.data-expand\{width:72px;min-width:72px;height:48px;min-height:48px/);
+  assert.notEqual(h.controller.dataArtwork("Orbis"),h.controller.dataArtwork("Ocellus"));
+  assert.notEqual(h.controller.dataArtwork("Coriolis"),h.controller.dataArtwork("Dodecahedral"));
+  const station=h.controller.dataStation({name:"Port",type:"Orbis",distance:12,pads:{large:4},economies:[{name:"Extraction",percent:65}],services:["Repair","Shipyard","Mission Board","Vista Genomics"]},true);
+  assert.match(station,/Flight support/);assert.match(station,/Markets & equipment/);
+  assert.match(station,/Command & contacts/);assert.match(station,/Exploration & other/);
+  assert.match(station,/65%/);assert.match(station,/Large pads/);
+  assert.match(h.controller.dataFaction({name:"Control",influence:45,states:["Boom","Civil War","Famine"]},"Control"),/data-controlling/);
+  assert.match(h.controller.dataFaction({name:"Control",states:["Boom"]},"Control"),/data-state-good/);
+  const manifest=h.controller.dataOperations("cargo",{cargo:{used:25,capacity:100,free:75,items:[{name:"Steel",count:25}],missionNeeds:[{name:"Water",stillNeeded:8}]}},{},{},{},{});
+  assert.match(manifest,/Steel/);assert.match(manifest,/8 t needed/);
+  h.controller.setState({connected:true,scout:{system:{name:"Test",address:"123"}}});
+  h.controller.setDataReport({address:"123",status:"available",fetchedAt:Date.now()/1000,data:{stations:[{name:"Alpha",type:"Orbis"},{name:"Beta",type:"Coriolis"}],factions:[],bodies:[]}});
+  h.node("dataStations").onclick();
+  h.node("dataSearch").value="Beta";h.node("dataSearch").oninput();
+  assert.doesNotMatch(h.node("dataDirectory").innerHTML,/Alpha/);
+  assert.match(h.node("dataDirectory").innerHTML,/data-object-index="1"/);
+  h.controller.openDataDetail("stations",1);assert.match(h.node("dataDetail").innerHTML,/Beta/);
+  h.node("dataSearchClear").onclick();assert.match(h.node("dataDirectory").innerHTML,/Alpha/);
+}
+console.log("✓ Enlarged data controls, station illustrations, categorized services, faction states and filtered directory identity");
