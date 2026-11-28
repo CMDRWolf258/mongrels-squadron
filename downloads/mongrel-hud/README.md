@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.30 — Data Display layout refinement
+
+Fixed viewport-height two-by-two layout with independent scroll areas, expand/restore buttons, compact system banner, default faction directory, compact planet metrics and clean signal labels, shortened ring names, rings depicted only when reported, economy composition strip and radar standby graphics. Missing fields are hidden rather than repeated dashes. Existing Spansh/Scout data path unchanged. Actual iPad sizing remains to be verified. Scout unchanged.
+
 ## Mongrel HUD 0.18.29 — Data Display
 
 Adds a read-only four-quadrant iPad display (system directory, navigation target, ship contact, operations). Spansh system dump is requested only from the active paired data tab using the existing verified HTTPS reader, with five-minute caching, 30-second manual refresh minimum, and explicit failure/cache status. Directory includes reported factions, stations (including body-hosted stations) and bodies. Tap a station/body for a detail modal with embedded type schematic, available economy composition and services; missing values are not inferred. Local Scout target/status telemetry remains separate from community data. Operations modes: Auto, Ship, Exploration, Route. Scout unchanged. Community schema and actual iPad rendering require live verification; schematics are illustrative, not official screenshots.
