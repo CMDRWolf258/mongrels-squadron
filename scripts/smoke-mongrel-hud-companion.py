@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.34"
+assert hud.APP_VERSION=="0.18.35"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -120,12 +120,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.31"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.32"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.33"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.34"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.35"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.35"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.36"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.35",
+    "name":"Mongrel HUD Windows v0.18.36",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.35" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.36" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -716,7 +717,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.34"
+    assert hud.APP_VERSION=="0.18.35"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -1187,3 +1188,24 @@ with mock.patch.object(hud,"fetch_display_system",return_value=d) as fetch:
     assert hud.MongrelHudApp.data_display(app_display)["data"]==d
     assert fetch.call_count==1
 print("✓ Data display identity, economy composition, nested stations, caching")
+
+assert hud.RAVEN_FACILITY_IMAGES["dodec"] == "dodec.jpg"
+assert "no_truss" in hud.RAVEN_FACILITY_IMAGES and "apollo" in hud.RAVEN_FACILITY_IMAGES
+try:
+    hud.raven_facility_image("https://example.com/test.jpg")
+    raise AssertionError("unexpected proxy acceptance")
+except ValueError as exc:
+    assert str(exc) == "unknown_facility_image"
+old_read = hud.sourcing_verified_read
+try:
+    requests = []
+    jpeg = b"\xff\xd8\xff\x00\xff\xd9"
+    hud.sourcing_verified_read = lambda req: (requests.append(req.full_url) or jpeg)
+    hud._raven_photo_cache.clear()
+    assert hud.raven_facility_image("dodec") == jpeg
+    assert hud.raven_facility_image("dodec") == jpeg
+    assert requests == ["https://njthomson.github.io/SrvSurvey/colony/dodec.jpg"]
+finally:
+    hud.sourcing_verified_read = old_read
+    hud._raven_photo_cache.clear()
+print("✓ Raven screenshot allowlist, fixed source and cache")

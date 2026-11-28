@@ -55,7 +55,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.34"
+APP_VERSION = "0.18.35"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1848,6 +1848,143 @@ def sourcing_verified_read(req):
             return response.read(8 * 1024 * 1024 + 1)
 
 
+# Public reference images from Raven Colonial / SRVSurvey, credited in the controller.
+# A fixed allowlist prevents the companion from acting as a general URL proxy.
+RAVEN_FACILITY_IMAGES = {
+    "aerecura": "aerecura.jpg",
+    "aergia": "aergia.jpg",
+    "aegle": "aegle.jpg",
+    "alala": "alala.jpg",
+    "alastor": "alastor.jpg",
+    "aletheia": "aletheia.jpg",
+    "ananke": "ananke.jpg",
+    "angelia": "angelia.jpg",
+    "annona": "annona.jpg",
+    "antevorta": "antevorta.jpg",
+    "apate": "apate.jpg",
+    "aphrodite": "aphrodite.jpg",
+    "apollo": "apollo.jpg",
+    "ares": "ares.jpg",
+    "artemis": "artemis.jpg",
+    "asclepius": "asclepius.jpg",
+    "asteria": "asteria.jpg",
+    "asteroid": "asteroid.jpg",
+    "astraeus": "astraeus.jpg",
+    "athena": "athena.jpg",
+    "atropos": "atropos.jpg",
+    "bacchus": "bacchus.jpg",
+    "bellona": "bellona.jpg",
+    "bia": "bia.jpg",
+    "caelus": "caelus.jpg",
+    "caerus": "caerus.jpg",
+    "ceres": "ceres.jpg",
+    "chronos": "chronos.jpg",
+    "clotho": "clotho.jpg",
+    "coeus": "coeus.jpg",
+    "comus": "comus.jpg",
+    "consus": "consus.jpg",
+    "dec_truss": "dec_truss.jpg",
+    "decima": "decima.jpg",
+    "demeter": "demeter.jpg",
+    "dicaeosyne": "dicaeosyne.jpg",
+    "dione": "dione.jpg",
+    "dionysus": "dionysus.jpg",
+    "dodec": "dodec.jpg",
+    "dodona": "dodona.jpg",
+    "dual_truss": "dual_truss.jpg",
+    "dysnomia": "dysnomia.jpg",
+    "eirene": "eirene.jpg",
+    "enodia": "enodia.jpg",
+    "enyo": "enyo.jpg",
+    "erebus": "erebus.jpg",
+    "eunomia": "eunomia.jpg",
+    "eunostus": "eunostus.jpg",
+    "eupraxia": "eupraxia.jpg",
+    "euthenia": "euthenia.jpg",
+    "fauna": "fauna.jpg",
+    "fontus": "fontus.jpg",
+    "fornax": "fornax.jpg",
+    "fufluns": "fufluns.jpg",
+    "gaea": "gaea.jpg",
+    "gelos": "gelos.jpg",
+    "harmonia": "harmonia.jpg",
+    "hedone": "hedone.jpg",
+    "hephaestus": "hephaestus.jpg",
+    "hera": "hera.jpg",
+    "hermes": "hermes.jpg",
+    "hestia": "hestia.jpg",
+    "ichnaea": "ichnaea.jpg",
+    "io": "io.jpg",
+    "janus": "janus.jpg",
+    "ioke": "ioke.jpg",
+    "lachesis": "lachesis-thumb.jpg",
+    "laverna": "laverna.jpg",
+    "mantus": "mantus.jpg",
+    "mefitis": "mefitis.jpg",
+    "meteope": "meteope.jpg",
+    "minerva": "minerva.jpg",
+    "minthe": "minthe.jpg",
+    "molae": "molae.jpg",
+    "necessitas": "necessitas-thumb.jpg",
+    "nemesis": "nemesis-thumb.jpg",
+    "no_truss": "no_truss.jpg",
+    "nomos": "nomos.jpg",
+    "nona": "nona.jpg",
+    "ocellus": "ocellus.jpg",
+    "opis": "opis.jpg",
+    "opora": "opora.jpg",
+    "orcus": "orcus.jpg",
+    "ourea": "ourea.jpg",
+    "palici": "palici.jpg",
+    "pasithea": "pasithea.jpg",
+    "pheobe": "pheobe.jpg",
+    "phorcys": "phorcys.jpg",
+    "picumnus": "picumnus.jpg",
+    "pistis": "pistis.jpg",
+    "plutus": "plutus.jpg",
+    "poena": "poena.jpg",
+    "polemos": "polemos.jpg",
+    "ponos": "ponos.jpg",
+    "porrima": "porrima.jpg",
+    "poseidon": "poseidon.jpg",
+    "prometheus": "prometheus.jpg",
+    "providentia": "providentia.jpg",
+    "quad_truss": "quad_truss.jpg",
+    "quint_truss": "quint_truss.jpg",
+    "silenus": "silenus.jpg",
+    "soter": "soter.jpg",
+    "tartarus": "tartarus.jpg",
+    "tellus_e": "tellus_e.jpg",
+    "tethys": "tethys.jpg",
+    "vacuna": "vacuna.jpg",
+    "vesta": "vesta.jpg",
+    "vulcan": "vulcan.jpg",
+    "zeus": "zeus.jpg",
+}
+_raven_photo_cache = {}
+_raven_photo_lock = threading.Lock()
+
+
+def raven_facility_image(key):
+    filename = RAVEN_FACILITY_IMAGES.get(key)
+    if not filename:
+        raise ValueError("unknown_facility_image")
+    with _raven_photo_lock:
+        cached = _raven_photo_cache.get(key)
+        if cached is not None:
+            return cached
+    req = urllib.request.Request("https://njthomson.github.io/SrvSurvey/colony/" + filename,
+                                 headers={"User-Agent": "MongrelHUD/1.0", "Accept": "image/jpeg"})
+    raw = sourcing_verified_read(req)
+    if not isinstance(raw, bytes) or len(raw) > 2500000 or not raw.startswith(b"\xff\xd8\xff") or not raw.endswith(b"\xff\xd9"):
+        raise ValueError("invalid_facility_image")
+    with _raven_photo_lock:
+        if len(_raven_photo_cache) >= 16:
+            _raven_photo_cache.pop(next(iter(_raven_photo_cache)))
+        _raven_photo_cache[key] = raw
+    return raw
+
+
 def display_text(value, limit=160):
     return value.strip()[:limit] if isinstance(value, str) else ""
 
@@ -1925,7 +2062,7 @@ def display_system_dump(payload, name, address):
         key = mid if mid.isdecimal() else n.casefold()
         pads = s.get("landingPads")
         pads = {k: display_number(pads.get(k)) for k in ("small", "medium", "large")} if isinstance(pads, dict) else {}
-        row = {"name": n, "type": display_text(s.get("type")), "body": body,
+        row = {"name": n, "type": display_text(s.get("type")), "buildType": display_text(s.get("buildType")), "body": body,
                "distance": display_number(s.get("distanceToArrival")),
                "faction": label(s.get("controllingFaction")), "factionState": label(s.get("controllingFactionState")), "allegiance": label(s.get("allegiance")),
                "government": label(s.get("government")), "primaryEconomy": label(s.get("primaryEconomy") or s.get("economy")),
@@ -9724,6 +9861,24 @@ def make_handler(app: MongrelHudApp):
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Cache-Control", "no-store")
                 self.send_header("X-Frame-Options", "DENY")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            if path == "/api/facility-image":
+                if not self.authorized():
+                    self.send_json({"ok": False, "error": "pair_required"}, 401)
+                    return
+                key = (parse_qs(urlparse(self.path).query).get("type") or [""])[0]
+                try:
+                    body = raven_facility_image(key)
+                except Exception:
+                    self.send_json({"ok": False, "error": "facility_image_unavailable"}, 404)
+                    return
+                self.send_response(200)
+                self.send_header("Content-Type", "image/jpeg")
+                self.send_header("Cache-Control", "private, max-age=86400")
                 self.send_header("X-Content-Type-Options", "nosniff")
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()

@@ -61,7 +61,7 @@ function harness(storage = new Map()) {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,dataBody,dataStation,dataFaction,dataOperations,dataSignalLabel,dataSystemTree,dataStationMatches,dataColonization,dataCarrier,setDataModule,saveDataProfile,loadDataProfile,deleteDataProfile,setDataModuleFirst,setDataFocus,dataPlacements,setDataVisible,setDataPrimary,resetDataLayout,openDataLayout,closeDataLayout,pinDataTarget,clearDataPin,getDataLayout(){return dataLayout},openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,dataBody,dataStation,dataFaction,dataOperations,dataSignalLabel,dataSystemTree,dataStationMatches,ravenFacilityRef,dataStationVisual,dataColonization,dataCarrier,setDataModule,saveDataProfile,loadDataProfile,deleteDataProfile,setDataModuleFirst,setDataFocus,dataPlacements,setDataVisible,setDataPrimary,resetDataLayout,openDataLayout,closeDataLayout,pinDataTarget,clearDataPin,getDataLayout(){return dataLayout},openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -1117,3 +1117,18 @@ console.log("✓ Independent economy strengths, body materials, orbital tree, st
   assert.match(h.node("dataTarget").innerHTML,/PINNED/);
 }
 console.log("✓ Independent module assignments, native control reparenting, saved configurations, carrier/colonization data and moved target pin");
+
+{
+  const h=harness(),c=h.controller;
+  assert.equal(c.ravenFacilityRef({type:"Coriolis Starport"}).key,"no_truss");
+  assert.equal(c.ravenFacilityRef({type:"Orbis Starport"}).key,"apollo");
+  assert.equal(c.ravenFacilityRef({type:"Dodec Starport"}).key,"dodec");
+  assert.equal(c.ravenFacilityRef({type:"Ocellus Starport"}).key,"ocellus");
+  assert.equal(c.ravenFacilityRef({type:"Fleet Carrier"}),null);
+  assert.equal(c.ravenFacilityRef({type:"Coriolis Starport",buildType:"dual_truss"}).exact,true);
+  const html=c.dataStation({name:"Port",type:"Orbis Starport"},true);
+  assert.match(html,/\/api\/facility-image\?type=apollo/);
+  assert.match(html,/Kai Thoreau/);assert.match(html,/Representative class photo/);
+  assert.match(html,/data-raven-fallback/);
+}
+console.log("✓ Raven facility image types, source attribution and schematic fallback");
