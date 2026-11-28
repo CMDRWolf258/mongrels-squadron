@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.28"
+assert hud.APP_VERSION=="0.18.29"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -114,12 +114,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.25"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.26"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.27"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.28"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.29"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.29"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.30"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.29",
+    "name":"Mongrel HUD Windows v0.18.30",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.29" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.30" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -710,7 +711,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.28"
+    assert hud.APP_VERSION=="0.18.29"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -1151,3 +1152,29 @@ for key,scan in {"NUMPADDECIMAL":0x53,"NUMPAD1":0x4F,"NUMPAD8":0x48,"NUMPAD2":0x
 assert hud.deck_scan_code("K",lambda vk,mode:0x25)==(0x25,8)
 assert hud.deck_scan_code("RALT",lambda vk,mode:0xE038)==(0x38,9)
 print("✓ Ship control deck preset selection, mapping validation, extended navigation keys and deliberate dispatch")
+
+# Data display must preserve identity and reported proportions; nested stations
+# are deduplicated and associated with the host body.
+sample={"system":{"id64":123,"name":"Test","population":4500000000,"controllingFaction":{"name":"Faction"},
+ "factions":[{"name":"Faction","influence":0.42,"state":"Boom"}],
+ "stations":[{"marketId":77,"name":"Port","type":"Orbis","economies":{"Industrial":0.65,"Extraction":0.35},"services":["Market","Repair"]}],
+ "bodies":[{"name":"Test A 1","bodyId":1,"isLandable":True,"stations":[{"marketId":77,"name":"Port","type":"Orbis"}]}]}}
+d=hud.display_system_dump(sample,"Test","123")
+assert d["factions"][0]["influence"]==42
+assert len(d["stations"])==1 and d["stations"][0]["body"]=="Test A 1"
+assert d["stations"][0]["economies"]==[{"name":"Industrial","percent":65.0},{"name":"Extraction","percent":35.0}]
+assert d["stations"][0]["services"]==["Market","Repair"]
+assert hud.display_economies({"Industrial":0.4})==[]
+assert hud.display_economies({"Industrial":65,"Extraction":35})[0]["percent"]==65
+try:
+    hud.display_system_dump(sample,"Other","123")
+    raise AssertionError("wrong system accepted")
+except ValueError as exc:
+    assert str(exc)=="system_identity_mismatch"
+app_display=types.SimpleNamespace(lock=hud.threading.Lock(),snapshot=types.SimpleNamespace(connected=True),
+    scout_state=lambda:{"system":{"name":"Test","address":"123"}},data_display_lock=hud.threading.Lock(),data_display_cache={})
+with mock.patch.object(hud,"fetch_display_system",return_value=d) as fetch:
+    assert hud.MongrelHudApp.data_display(app_display)["data"]==d
+    assert hud.MongrelHudApp.data_display(app_display)["data"]==d
+    assert fetch.call_count==1
+print("✓ Data display identity, economy composition, nested stations, caching")
