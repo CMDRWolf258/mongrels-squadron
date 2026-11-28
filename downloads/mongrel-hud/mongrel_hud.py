@@ -55,7 +55,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.37"
+APP_VERSION = "0.18.38"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -2043,6 +2043,16 @@ def display_parents(value):
     return out
 
 
+def display_construction_site(station):
+    """Exclude temporary construction records from the passive directory only."""
+    kind = " ".join(display_text(station.get("type")).casefold().replace("_", " ").replace("-", " ").split())
+    name = " ".join(display_text(station.get("name")).casefold().split())
+    if "construction" in kind or "colonisation ship" in kind or "colonization ship" in kind:
+        return True
+    return bool(re.match(r"^(?:(?:orbital|planetary|surface|system) )?construction (?:site|depot)(?:$|\s|:|[-–])", name)
+                or re.match(r"^system coloni[sz]ation ship(?:$|\s|:|[-–])", name))
+
+
 def display_system_dump(payload, name, address):
     system = payload.get("system", payload) if isinstance(payload, dict) else {}
     if not isinstance(system, dict) or str(system.get("id64")) != address or display_text(system.get("name")).casefold() != name.casefold():
@@ -2053,7 +2063,7 @@ def display_system_dump(payload, name, address):
         return [label(x) for x in v[:120] if label(x)] if isinstance(v, list) else []
     stations = {}
     def add_station(s, body=""):
-        if not isinstance(s, dict):
+        if not isinstance(s, dict) or display_construction_site(s):
             return
         n = display_text(s.get("name"))
         if not n:
@@ -6870,16 +6880,23 @@ class MongrelHudApp:
             return None
         return {k: v for k, v in cue.items() if k != "atMonotonic"}
 
-    def data_display(self, force=False):
+    def data_display(self, force=False, target=False):
         # Only the paired Data Display tab calls this. Never query Spansh
         # from the regular 1-second controller state polling endpoint.
         scout = self.scout_state()
         system = scout.get("system") or {}
         name = display_text(system.get("name"))
         address = str(system.get("address") or "")
+        if target:
+            destination = (scout.get("status") or {}).get("destination") or {}
+            target_address = str(destination.get("systemAddress") or "")
+            name = display_text(destination.get("name"))
+            if not address or not target_address or target_address == address:
+                return {"ok": True, "status": "waiting", "address": target_address, "data": None}
+            address = target_address
         with self.lock:
             connected = self.snapshot.connected
-        if not connected or not name or not address.isascii() or not address.isdecimal() or len(address)>20:
+        if not connected or not name or not address.isascii() or not address.isdecimal() or len(address)>20 or int(address)==0:
             return {"ok": True, "status": "waiting", "address": address, "data": None}
         with self.data_display_lock:
             now = time.monotonic()
@@ -6887,7 +6904,7 @@ class MongrelHudApp:
             record = self.data_display_cache.get(key)
             if record and now-record["attempt"] < (30 if force else 300):
                 return record["response"]
-            response = {"ok":True, "status":"available", "address":address, "source":"Spansh", "data":None}
+            response = {"ok":True, "status":"available", "address":address, "name":name, "source":"Spansh", "data":None}
             try:
                 response["data"] = fetch_display_system(name, address)
                 response["fetchedAt"] = time.time()
@@ -9989,7 +10006,8 @@ def make_handler(app: MongrelHudApp):
                 if not self.authorized():
                     self.send_json({"ok": False, "error": "pair_required"}, 401)
                     return
-                self.send_json(app.data_display(force=parse_qs(urlparse(self.path).query).get("refresh")==["1"]))
+                params = parse_qs(urlparse(self.path).query)
+                self.send_json(app.data_display(force=params.get("refresh")==["1"], target=params.get("target")==["1"]))
                 return
             if path in {"/api/state", "/api/route", "/api/carrier-saved-route"}:
                 if not self.authorized():

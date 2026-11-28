@@ -61,7 +61,7 @@ function harness(storage = new Map()) {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,dataBody,dataStation,dataFaction,dataOperations,dataSignalLabel,dataSystemTree,dataStationMatches,ravenFacilityRef,dataStationVisual,dataColonization,dataCarrier,setDataModule,saveDataProfile,loadDataProfile,deleteDataProfile,setDataModuleFirst,setDataFocus,dataPlacements,setDataVisible,setDataPrimary,resetDataLayout,openDataLayout,closeDataLayout,pinDataTarget,clearDataPin,getDataLayout(){return dataLayout},openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,dataBody,dataStation,dataFaction,dataOperations,dataSignalLabel,dataSystemTree,dataStationMatches,dataRemoteSelection,dataRemoteTarget,setRemoteReport(v){dataRemoteReport=v;dataRemoteRequestedKey=String(v.address)+"|"+String(v.name).toLowerCase();dataRemoteLastAttempt=Date.now()},ravenFacilityRef,dataStationVisual,dataColonization,dataCarrier,setDataModule,saveDataProfile,loadDataProfile,deleteDataProfile,setDataModuleFirst,setDataFocus,dataPlacements,setDataVisible,setDataPrimary,resetDataLayout,openDataLayout,closeDataLayout,pinDataTarget,clearDataPin,getDataLayout(){return dataLayout},openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -1060,6 +1060,25 @@ console.log("✓ Enlarged data controls, station illustrations, categorized serv
   assert.doesNotMatch(h.node("dataTarget").innerHTML,/PINNED|Alpha/);
 }
 console.log("✓ Data Display persistent layouts, primary selection, focus restore, last-panel guard and scoped target pin");
+{
+  const h=harness(),c=h.controller;
+  c.setState({connected:true,scout:{system:{name:"Local",address:"123"},status:{systemAddress:"123",destination:{name:"Remote",systemAddress:"456"}}}});
+  c.setRemoteReport({address:"456",name:"Remote",status:"available",data:{name:"Remote",population:1000,security:"High",economy:"Refinery",stations:[],bodies:[{mainStar:true,type:"K (Yellow-Orange) Star"}]}});
+  c.setDataReport({address:"123",status:"available",fetchedAt:Date.now()/1000,data:{name:"Local",population:12,stations:[],factions:[],bodies:[]}});
+  assert.match(h.node("dataTarget").innerHTML,/Remote/);
+  assert.match(h.node("dataTarget").innerHTML,/Refinery/);
+  assert.match(h.node("dataTarget").innerHTML,/Yellow-Orange/);
+  assert.equal(h.node("dataSystemName").textContent,"Local");
+  c.setState({connected:true,scout:{system:{name:"Local",address:"123"},status:{systemAddress:"123",destination:{name:"Next",systemAddress:"789"}}}});
+  c.renderDataDisplay();
+  assert.match(h.node("dataTarget").innerHTML,/Next/);
+  assert.doesNotMatch(h.node("dataTarget").innerHTML,/Refinery|Yellow-Orange/);
+  c.setState({connected:true,scout:{system:{name:"Local",address:"123"},status:{systemAddress:"123",destination:{name:"Local body",systemAddress:"123"}}}});
+  c.renderDataDisplay();
+  assert.match(h.node("dataTarget").innerHTML,/Local body/);
+  assert.doesNotMatch(h.node("dataTarget").innerHTML,/EXTERNAL SYSTEM/);
+}
+console.log("✓ Remote navigation target summary, system identity and local target fallback");
 
 {
   const h=harness(),c=h.controller;
