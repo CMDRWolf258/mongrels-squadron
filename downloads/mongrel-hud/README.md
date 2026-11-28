@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.37 — Orbital outpost imagery
+
+Restores the orbital outpost photo fallback removed in 0.18.36. Exact Raven design still wins. Reported orbital outpost subtype selects its corresponding reference; otherwise choose a labelled economy-based or general outpost reference, never claim the actual design is known. Unidentified surface sites retain schematics. No Scout changes.
+
 ## Mongrel HUD 0.18.36 — Exact Raven facility designs
 
 Enriches Spansh station records from Raven Colonial's public v2 system-design endpoint (completed sites only), with the documented completed-project endpoint as a fallback if unavailable. Matches market IDs first and unique same-system names only when IDs/host bodies do not conflict. Preserves explicit build types and records the source; excludes planned, mock, uncertain and demolished designs. Removes arbitrary generic surface settlement/outpost/hub/installation photos. Broad orbital starport class photos remain labelled representative. Data Display reports how many Raven designs matched or whether lookup failed. No writes to Raven, no new Scout release. Live Raven response not independently verified in development; regression fixtures match published API client schema.
