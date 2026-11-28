@@ -21,7 +21,7 @@ function harness(storage = new Map()) {
         toggle(name, force) { const enabled = force === undefined ? !classes.has(name) : force; if (enabled) classes.add(name); else classes.delete(name); },
         add(name) { classes.add(name); }, remove(name) { classes.delete(name); }, contains(name) { return classes.has(name); },
       },
-      getAttribute(name) { return attrs[name]; }, addEventListener() {}, querySelectorAll() { return []; },
+      getAttribute(name) { return attrs[name]; }, addEventListener() {}, querySelectorAll() { return []; }, appendChild(child){child.parentNode=this;return child;},
     };
     nodes.set(id, value);
     return value;
@@ -61,7 +61,7 @@ function harness(storage = new Map()) {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,dataBody,dataStation,dataFaction,dataOperations,dataSignalLabel,dataSystemTree,dataStationMatches,saveDataProfile,loadDataProfile,deleteDataProfile,setDataModuleFirst,setDataFocus,dataPlacements,setDataVisible,setDataPrimary,resetDataLayout,openDataLayout,closeDataLayout,pinDataTarget,clearDataPin,getDataLayout(){return dataLayout},openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,dataBody,dataStation,dataFaction,dataOperations,dataSignalLabel,dataSystemTree,dataStationMatches,dataColonization,dataCarrier,setDataModule,saveDataProfile,loadDataProfile,deleteDataProfile,setDataModuleFirst,setDataFocus,dataPlacements,setDataVisible,setDataPrimary,resetDataLayout,openDataLayout,closeDataLayout,pinDataTarget,clearDataPin,getDataLayout(){return dataLayout},openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -1083,3 +1083,37 @@ console.log("✓ Data Display persistent layouts, primary selection, focus resto
   c.setDataModuleFirst("Ops");assert.equal(c.getDataLayout().order[0],"Ops");
 }
 console.log("✓ Independent economy strengths, body materials, orbital tree, station filters and saved profiles");
+
+{
+  const storage=new Map(),h=harness(storage),c=h.controller;
+  assert.equal(h.node("dataNativeSystem").parentNode,h.node("dataModuleHostSystem"));
+  c.setDataModule("Ops","directory");
+  assert.equal(c.getDataLayout().modules.System,"operations");
+  assert.equal(h.node("dataNativeSystem").parentNode,h.node("dataModuleHostOps"));
+  c.setDataModule("System","colonization");
+  c.setDataModule("Contact","carrier");
+  c.setDataVisible("Contact",false);
+  c.saveDataProfile("My construction");
+  c.resetDataLayout();
+  assert.equal(c.getDataLayout().modules.System,"directory");
+  c.loadDataProfile("s0");
+  assert.equal(c.getDataLayout().modules.System,"colonization");
+  assert.equal(c.getDataLayout().modules.Contact,"carrier");
+  assert.equal(c.getDataLayout().visible.includes("Contact"),false);
+  const restored=harness(storage);
+  assert.equal(restored.controller.getDataLayout().modules.System,"colonization");
+  assert.equal(restored.node("dataNativeSystem").parentNode,restored.node("dataModuleHostOps"));
+  const colony=c.dataColonization({colonization:{enabled:true,projects:[{name:"Project",system:"Test"}],remaining:400,toCollect:300,deliveryTrips:2,collectionTrips:1,rows:[{name:"Steel",need:400,ship:100,carrier:0,toCollect:300}]}});
+  assert.match(colony,/Steel/);assert.match(colony,/300/);assert.match(colony,/Project/);
+  const unknown=c.dataColonization({colonization:{enabled:true,projects:[{name:"Project"}],remaining:200,toCollect:null,rows:[{name:"Titanium",need:200,ship:null,carrier:null,toCollect:200}]}});
+  assert.match(unknown,/Titanium/);assert.doesNotMatch(unknown,/class="need">200/);
+  const carrier=c.dataCarrier({ownerCarrier:{name:"Pneuma"}},{carrierLive:{status:"plotted",label:"JUMP PLOTTED",remainingSeconds:420,padStatus:"upcoming",padRemainingSeconds:180,destinationSystem:"Test",estimated:true},carrierJourney:{status:"active",completedJumps:1,totalJumps:4,remainingJumps:3,estimatedTritiumRemaining:600,nextSystem:"Test"}});
+  assert.match(carrier,/Pneuma/);assert.match(carrier,/JUMP PLOTTED/);assert.match(carrier,/Pad lockdown in/);assert.match(carrier,/600 t/);
+  c.setState({connected:true,scout:{system:{name:"Test",address:"123"}}});
+  c.setDataReport({address:"123",status:"available",fetchedAt:Date.now()/1000,data:{stations:[{name:"Port",type:"Orbis"}],bodies:[],factions:[]}});
+  c.setDataModule("Target","ship");c.setDataModule("Contact","target");
+  c.openDataDetail("stations",0);c.pinDataTarget();
+  assert.equal(c.getDataLayout().visible.includes("Contact"),true);
+  assert.match(h.node("dataTarget").innerHTML,/PINNED/);
+}
+console.log("✓ Independent module assignments, native control reparenting, saved configurations, carrier/colonization data and moved target pin");

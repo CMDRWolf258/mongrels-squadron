@@ -368,6 +368,31 @@ main.data-wide>.controller-tabs button{min-height:39px}
 .data-photo-controls button{min-height:42px}
 .data-photo-controls input{display:none}
 .data-photo-credit{font-size:.67rem;color:#95b8c8}
+
+.data-module-host,.data-native-module{display:flex;flex-direction:column;flex:1;min-height:0;min-width:0;overflow:hidden}
+.data-module-host .data-module-extra{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.data-module-host .data-module-extra.hidden{display:none!important}
+.data-module-extra .data-list{max-height:none;overflow:visible}
+.data-module-extra .data-list button{min-height:42px}
+.data-layout-option{flex-wrap:wrap}
+.data-layout-option label{flex:1;min-width:115px}
+.data-layout-option select{flex:1;max-width:none;min-width:145px}
+.data-module-summary{display:flex;align-items:center;gap:8px;margin:4px 0 8px}
+.data-module-summary strong{font-size:1.1rem;color:#d5eef5}
+.data-colony-table{width:100%;border-collapse:collapse;font-size:.76rem;font-variant-numeric:tabular-nums}
+.data-colony-table th{position:sticky;top:0;background:#183744;color:#9dd5e2;font-size:.68rem;text-align:right;padding:5px 3px}
+.data-colony-table th:first-child,.data-colony-table td:first-child{text-align:left}
+.data-colony-table td{text-align:right;border-bottom:1px solid #2a4652;padding:5px 3px}
+.data-colony-table .ready{color:#9de0b8}
+.data-colony-table .unavailable{color:#74838c}
+.data-colony-table .need{color:#efc882}
+.data-carrier-phase{padding:8px;border:1px solid #386373;background:#15333f;border-radius:7px;margin:4px 0}
+.data-carrier-phase strong{display:block;color:#a6e8f4;font-size:.9rem}
+.data-carrier-phase .timer{font-size:1.7rem;color:#d9f3f8;font-variant-numeric:tabular-nums;font-weight:750;margin:2px 0}
+.data-carrier-phase .warning{color:#efc882}
+.data-carrier-phase .ready{color:#a8e6c5}
+.data-module-source{font-size:.68rem;color:#91b2bf;margin:7px 0}
+.data-module-mini-search{width:100%;font-size:16px;min-height:34px;background:#102b38;color:#d2e8ef;border:1px solid #355565;border-radius:5px;padding:5px;margin:3px 0 5px}
 </style>
 </head>
 <body>
@@ -381,27 +406,27 @@ main.data-wide>.controller-tabs button{min-height:39px}
   <section id="dataTab" class="hidden">
     <div class="data-banner"><div><div class="data-kicker">MONGREL // SYSTEM INTELLIGENCE</div><h2 id="dataSystemName">Awaiting telemetry</h2><div id="dataSystemMeta" class="data-sub"></div></div><div><div class="data-status" id="dataSource">Waiting for Scout</div><div class="data-banner-tools"><button class="data-button" id="dataRefresh" type="button">REFRESH DATA</button><button class="data-button" id="dataLayoutOpen" type="button" aria-label="Configure Data Display layout">LAYOUT · 4</button></div></div></div>
     <div class="data-grid" id="dataGrid">
-      <section class="data-panel" id="dataPanelSystem"><div class="data-panel-head"><h3>01 / SYSTEM DIRECTORY</h3><div class="data-panel-actions"><button type="button" class="data-hide" id="dataHideSystem" aria-label="Hide system directory" title="Hide panel">−</button><button type="button" class="data-expand" id="dataExpandSystem" aria-label="Expand system directory">⛶</button></div></div><div id="dataSystem"></div><div class="data-section-tabs"><button id="dataFactions" type="button">FACTIONS</button><button id="dataStations" type="button">STATIONS</button><button id="dataBodies" type="button">BODIES</button><button id="dataMap" type="button">MAP</button></div><div id="dataDirectorySearch" class="data-directory-search" hidden><input id="dataSearch" type="search" autocomplete="off" placeholder="Filter directory" aria-label="Filter system directory"><button id="dataSearchClear" type="button" aria-label="Clear filter">×</button></div><select id="dataStationFilter" class="data-filter-select" aria-label="Station filter" hidden><option value="all">All facilities</option><option value="large">Large pads</option><option value="orbital">Orbital starports</option><option value="surface">Surface facilities</option><option value="carrier">Fleet carriers</option><option value="market">Commodity market</option><option value="shipyard">Shipyard</option><option value="repair">Repair</option></select><div id="dataDirectory" class="data-list"></div></section>
-      <section class="data-panel" id="dataPanelTarget"><div class="data-panel-head"><h3>02 / NAVIGATION TARGET</h3><div class="data-panel-actions"><button type="button" class="data-hide" id="dataHideTarget" aria-label="Hide navigation target" title="Hide panel">−</button><button type="button" class="data-expand" id="dataExpandTarget" aria-label="Expand navigation target">⛶</button></div></div><div id="dataTarget" class="data-panel-scroll"></div></section>
-      <section class="data-panel" id="dataPanelContact"><div class="data-panel-head"><h3>03 / SHIP CONTACT</h3><div class="data-panel-actions"><button type="button" class="data-hide" id="dataHideContact" aria-label="Hide ship contact" title="Hide panel">−</button><button type="button" class="data-expand" id="dataExpandContact" aria-label="Expand ship contact">⛶</button></div></div><div id="dataContact" class="data-panel-scroll"></div></section>
-      <section class="data-panel" id="dataPanelOps"><div class="data-panel-head"><h3>04 / OPERATIONS</h3><div class="data-panel-actions"><button type="button" class="data-hide" id="dataHideOps" aria-label="Hide operations" title="Hide panel">−</button><button type="button" class="data-expand" id="dataExpandOps" aria-label="Expand operations">⛶</button></div></div><div class="data-section-tabs"><button id="dataAuto" type="button">AUTO</button><button id="dataShip" type="button">SHIP</button><button id="dataExplore" type="button">EXPLORATION</button><button id="dataRoute" type="button">ROUTE</button><button id="dataCargo" type="button">CARGO</button></div><div id="dataOps" class="data-panel-scroll"></div></section>
+      <section class="data-panel" id="dataPanelSystem"><div class="data-panel-head"><h3 id="dataTitleSystem">01 / SYSTEM DIRECTORY</h3><div class="data-panel-actions"><button type="button" class="data-hide" id="dataHideSystem" aria-label="Hide system directory" title="Hide panel">−</button><button type="button" class="data-expand" id="dataExpandSystem" aria-label="Expand system directory">⛶</button></div></div><div id="dataModuleHostSystem" class="data-module-host"><div id="dataNativeSystem" class="data-native-module"><div id="dataSystem"></div><div class="data-section-tabs"><button id="dataFactions" type="button">FACTIONS</button><button id="dataStations" type="button">STATIONS</button><button id="dataBodies" type="button">BODIES</button><button id="dataMap" type="button">MAP</button></div><div id="dataDirectorySearch" class="data-directory-search" hidden><input id="dataSearch" type="search" autocomplete="off" placeholder="Filter directory" aria-label="Filter system directory"><button id="dataSearchClear" type="button" aria-label="Clear filter">×</button></div><select id="dataStationFilter" class="data-filter-select" aria-label="Station filter" hidden><option value="all">All facilities</option><option value="large">Large pads</option><option value="orbital">Orbital starports</option><option value="surface">Surface facilities</option><option value="carrier">Fleet carriers</option><option value="market">Commodity market</option><option value="shipyard">Shipyard</option><option value="repair">Repair</option></select><div id="dataDirectory" class="data-list"></div></div><div id="dataModuleExtraSystem" class="data-module-extra hidden"></div></div></section>
+      <section class="data-panel" id="dataPanelTarget"><div class="data-panel-head"><h3 id="dataTitleTarget">02 / NAVIGATION TARGET</h3><div class="data-panel-actions"><button type="button" class="data-hide" id="dataHideTarget" aria-label="Hide navigation target" title="Hide panel">−</button><button type="button" class="data-expand" id="dataExpandTarget" aria-label="Expand navigation target">⛶</button></div></div><div id="dataModuleHostTarget" class="data-module-host"><div id="dataNativeTarget" class="data-native-module"><div id="dataTarget" class="data-panel-scroll"></div></div><div id="dataModuleExtraTarget" class="data-module-extra hidden"></div></div></section>
+      <section class="data-panel" id="dataPanelContact"><div class="data-panel-head"><h3 id="dataTitleContact">03 / SHIP CONTACT</h3><div class="data-panel-actions"><button type="button" class="data-hide" id="dataHideContact" aria-label="Hide ship contact" title="Hide panel">−</button><button type="button" class="data-expand" id="dataExpandContact" aria-label="Expand ship contact">⛶</button></div></div><div id="dataModuleHostContact" class="data-module-host"><div id="dataNativeContact" class="data-native-module"><div id="dataContact" class="data-panel-scroll"></div></div><div id="dataModuleExtraContact" class="data-module-extra hidden"></div></div></section>
+      <section class="data-panel" id="dataPanelOps"><div class="data-panel-head"><h3 id="dataTitleOps">04 / OPERATIONS</h3><div class="data-panel-actions"><button type="button" class="data-hide" id="dataHideOps" aria-label="Hide operations" title="Hide panel">−</button><button type="button" class="data-expand" id="dataExpandOps" aria-label="Expand operations">⛶</button></div></div><div id="dataModuleHostOps" class="data-module-host"><div id="dataNativeOps" class="data-native-module"><div class="data-section-tabs"><button id="dataAuto" type="button">AUTO</button><button id="dataShip" type="button">SHIP</button><button id="dataExplore" type="button">EXPLORATION</button><button id="dataRoute" type="button">ROUTE</button><button id="dataCargo" type="button">CARGO</button></div><div id="dataOps" class="data-panel-scroll"></div></div><div id="dataModuleExtraOps" class="data-module-extra hidden"></div></div></section>
     </div>
-    <div class="data-footer">READ ONLY · SPANSH / SCOUT · Report age may differ from retrieval age · − Hide · ⛶ Expand · Layout restores panels</div>
+    <div id="dataModulePool" class="hidden" aria-hidden="true"></div><div class="data-footer">READ ONLY · SPANSH / SCOUT · Report age may differ from retrieval age · − Hide · ⛶ Expand · Layout restores panels</div>
   </section>
   <div id="dataOverlay" class="data-overlay hidden" role="dialog" aria-modal="true" aria-label="Directory detail"><div class="data-detail"><div class="data-detail-head"><div class="data-kicker">MONGREL // OBJECT INTELLIGENCE</div><div class="data-detail-actions"><button id="dataPin" class="data-button" type="button">PIN TO TARGET</button><button id="dataClose" class="data-button" type="button">CLOSE</button></div></div><div id="dataDetail"></div></div></div>
   <div id="dataLayoutOverlay" class="data-overlay hidden" role="dialog" aria-modal="true" aria-label="Data Display layout">
     <div class="data-detail data-layout-modal">
       <div class="data-detail-head"><h2>DISPLAY LAYOUT</h2><button id="dataLayoutClose" type="button" class="data-button">DONE</button></div>
-      <div class="data-sub">Choose which panels to show. One panel is always visible. Expanding a panel temporarily overrides this layout.</div>
+      <div class="data-sub">Choose a module for each slot and which slots to show. Selecting an already assigned module swaps the two slots. Expanding temporarily overrides the arrangement.</div>
       <div class="data-kicker">DISPLAY PROFILES</div>
       <div class="data-profile-tools"><select id="dataProfileSelect" aria-label="Saved display profile"></select><button id="dataProfileLoad" class="data-button" type="button">LOAD</button><button id="dataProfileDelete" class="data-button" type="button">DELETE</button></div>
       <div class="data-profile-tools"><input id="dataProfileName" maxlength="40" placeholder="Profile name" aria-label="Profile name"><button id="dataProfileSave" class="data-button" type="button">SAVE CURRENT</button></div>
       <div id="dataProfileNotice" class="data-sub" role="status"></div>
       <div class="data-layout-options">
-        <div class="data-layout-option"><label><input id="dataVisibleSystem" type="checkbox">System Directory</label></div>
-        <div class="data-layout-option"><label><input id="dataVisibleTarget" type="checkbox">Navigation Target</label></div>
-        <div class="data-layout-option"><label><input id="dataVisibleContact" type="checkbox">Ship Contact</label></div>
-        <div class="data-layout-option"><label><input id="dataVisibleOps" type="checkbox">Operations</label></div>
+        <div class="data-layout-option"><label><input id="dataVisibleSystem" type="checkbox">Slot 1</label><select id="dataModuleSystem" aria-label="Information module for slot 1"></select></div>
+        <div class="data-layout-option"><label><input id="dataVisibleTarget" type="checkbox">Slot 2</label><select id="dataModuleTarget" aria-label="Information module for slot 2"></select></div>
+        <div class="data-layout-option"><label><input id="dataVisibleContact" type="checkbox">Slot 3</label><select id="dataModuleContact" aria-label="Information module for slot 3"></select></div>
+        <div class="data-layout-option"><label><input id="dataVisibleOps" type="checkbox">Slot 4</label><select id="dataModuleOps" aria-label="Information module for slot 4"></select></div>
       </div>
       <label for="dataModuleOrder">Panel order (first panel moves to top left in four-panel mode)</label><select id="dataModuleOrder" class="data-layout-primary"></select><label for="dataPrimary">Primary panel (left side in two- or three-panel mode)</label>
       <select id="dataPrimary" class="data-layout-primary"></select>
@@ -1053,7 +1078,8 @@ el("deckControls").onclick=async function(e){
 };
 
 var dataReport=null,dataLoading=false,dataLastAttempt=0,dataRequestedAddress="",dataDirectoryMode="factions",dataOpsMode="auto",dataDetailKey="",dataFocus="",dataFilter="",dataFilterAddress="",dataDetailObject=null,dataPinned=null,dataTreeClosed=new Set(),dataStationFilter="all";
-var dataPanelKeys=["System","Target","Contact","Ops"],dataPanelNames={System:"System Directory",Target:"Navigation Target",Contact:"Ship Contact",Ops:"Operations"},dataLayoutKey="mongrel-hud-data-layout-v1",dataLayout=readDataPreferences(),dataLayoutOpen=false;
+var dataPanelKeys=["System","Target","Contact","Ops"],dataPanelNames={System:"System Directory",Target:"Navigation Target",Contact:"Ship Contact",Ops:"Operations"},dataLayoutKey="mongrel-hud-data-layout-v1",dataLayoutOpen=false;
+var dataModuleDefaults={System:"directory",Target:"target",Contact:"contact",Ops:"operations"},dataModuleNative={directory:"System",target:"Target",contact:"Contact",operations:"Ops"},dataModuleNames={directory:"System Directory",target:"Navigation Target",contact:"Ship Contact",operations:"Operations",factions:"Faction Intelligence",stations:"Station Directory",bodies:"Body Directory",map:"System Cartography",ship:"Ship Systems",cargo:"Cargo Manifest",explore:"Exploration",route:"Route Director",colonization:"Colonization Logistics",carrier:"Fleet Carrier"},dataModuleSignature="",dataModuleFilters={},dataLayout=readDataPreferences();
 dataDirectoryMode=dataLayout.directory;dataOpsMode=dataLayout.ops;
 var dataProfiles=readDataProfiles(),dataPhotos=readDataPhotos();
 function dataObj(v){return v&&typeof v==="object"?v:{}}
@@ -1066,7 +1092,10 @@ function normalizeDataPreferences(value){
   order=order.concat(dataPanelKeys.filter(k=>!order.includes(k)));
   var shown=order.filter(k=>!Array.isArray(v.visible)||v.visible.includes(k));
   if(!shown.length)shown=dataPanelKeys.slice();
-  return {visible:shown,order:order,primary:shown.includes(v.primary)?v.primary:shown[0],
+  var modules={},used=new Set();
+  dataPanelKeys.forEach(k=>{var m=v.modules&&v.modules[k];if(typeof m==="string"&&Object.hasOwn(dataModuleNames,m)&&!used.has(m)){modules[k]=m;used.add(m)}});
+  dataPanelKeys.forEach(k=>{if(!modules[k]){var m=!used.has(dataModuleDefaults[k])?dataModuleDefaults[k]:Object.keys(dataModuleNames).find(x=>!used.has(x));modules[k]=m;used.add(m)}});
+  return {visible:shown,order:order,modules:modules,primary:shown.includes(v.primary)?v.primary:shown[0],
     directory:["factions","stations","bodies","map"].includes(v.directory)?v.directory:"factions",
     ops:["auto","ship","explore","route","cargo"].includes(v.ops)?v.ops:"auto"};
 }
@@ -1086,7 +1115,32 @@ function dataPlacements(preferences,focused){
   if(order.length===2)return order.map((key,i)=>({key,column:String(i+1),row:"1"}));
   return [{key:order[0],column:"1",row:"1"}];
 }
+function dataSlotName(k){return dataModuleNames[dataLayout.modules[k]]||dataPanelNames[k]}
+function applyDataModules(){
+  var signature=JSON.stringify(dataLayout.modules);
+  if(signature===dataModuleSignature)return;
+  dataModuleSignature=signature;
+  var pool=el("dataModulePool");
+  // Keep the original interactive controls, IDs, events and scroll containers.
+  // Reparent their wrapper; never duplicate or recreate the native DOM.
+  dataPanelKeys.forEach(k=>pool.appendChild(el("dataNative"+k)));
+  dataPanelKeys.forEach(k=>{
+    var m=dataLayout.modules[k],native=dataModuleNative[m],host=el("dataModuleHost"+k),extra=el("dataModuleExtra"+k);
+    setText(el("dataTitle"+k),("0"+(dataPanelKeys.indexOf(k)+1)).slice(-2)+" / "+dataSlotName(k).toUpperCase());
+    extra.classList.toggle("hidden",!!native);
+    if(native)host.appendChild(el("dataNative"+native));
+    else{extra.scrollTop=0;dataSet("dataModuleExtra"+k,"");}
+  });
+}
+function setDataModule(key,module){
+  if(!dataPanelKeys.includes(key)||!Object.hasOwn(dataModuleNames,module))return false;
+  var other=dataPanelKeys.find(k=>k!==key&&dataLayout.modules[k]===module),old=dataLayout.modules[key];
+  dataLayout.modules[key]=module;
+  if(other)dataLayout.modules[other]=old;
+  saveDataPreferences();applyDataLayout();renderDataDisplay();return true;
+}
 function applyDataLayout(){
+  applyDataModules();
   if(dataFocus&&!dataLayout.visible.includes(dataFocus))dataFocus="";
   var grid=el("dataGrid"),placements=dataPlacements(dataLayout,dataFocus),count=dataLayout.visible.length;
   ["one","two","three","four"].forEach((name,i)=>grid.classList.toggle("data-layout-"+name,count===i+1));
@@ -1098,7 +1152,7 @@ function applyDataLayout(){
     panel.style.gridColumn=place?place.column:"";
     panel.style.gridRow=place?place.row:"";
     setText(expand,dataFocus===k?"↙":"⛶");
-    if(expand.setAttribute)expand.setAttribute("aria-label",(dataFocus===k?"Collapse ":"Expand ")+dataPanelNames[k]);
+    if(expand.setAttribute)expand.setAttribute("aria-label",(dataFocus===k?"Collapse ":"Expand ")+dataSlotName(k));
     hide.disabled=count===1||!!dataFocus;
     hide.classList.toggle("hidden",!!dataFocus);
   });
@@ -1125,7 +1179,7 @@ function setDataPrimary(key){
   dataLayout.primary=key;saveDataPreferences();applyDataLayout();
 }
 function resetDataLayout(){
-  dataFocus="";dataLayout.visible=dataPanelKeys.slice();dataLayout.order=dataPanelKeys.slice();dataLayout.primary="System";
+  dataFocus="";dataLayout.visible=dataPanelKeys.slice();dataLayout.order=dataPanelKeys.slice();dataLayout.primary="System";dataLayout.modules=Object.assign({},dataModuleDefaults);
   saveDataPreferences();applyDataLayout();
 }
 function readDataProfiles(){
@@ -1136,7 +1190,9 @@ function dataProfilePresets(){
     {name:"Hauling",layout:{visible:["Target","System","Ops"],primary:"Target",directory:"stations",ops:"cargo"}},
     {name:"BGS",layout:{visible:["System","Target","Ops"],primary:"System",directory:"factions",ops:"ship"}},
     {name:"Exploration",layout:{visible:["System","Target","Ops"],primary:"System",directory:"map",ops:"explore"}},
-    {name:"Combat",layout:{visible:["Contact","Target","Ops"],primary:"Contact",directory:"bodies",ops:"ship"}}
+    {name:"Combat",layout:{visible:["Contact","Target","Ops"],primary:"Contact",directory:"bodies",ops:"ship"}},
+    {name:"Colonization",layout:{visible:["System","Target","Ops"],primary:"System",modules:{System:"colonization",Target:"target",Ops:"cargo",Contact:"contact"}}},
+    {name:"Fleet Carrier",layout:{visible:["System","Target","Ops"],primary:"System",modules:{System:"carrier",Target:"target",Ops:"cargo",Contact:"contact"}}}
   ];
 }
 function renderDataProfiles(){
@@ -1172,15 +1228,18 @@ function setDataModuleFirst(key){
 }
 function renderDataLayoutMenu(){
   renderDataProfiles();
-  var moduleOrder=el("dataModuleOrder"),moduleOptions=dataLayout.order.map(k=>'<option value="'+k+'">'+dataPanelNames[k]+'</option>').join("");
+  var moduleOrder=el("dataModuleOrder"),moduleOptions=dataLayout.order.map(k=>'<option value="'+k+'">'+dataText(dataSlotName(k))+'</option>').join("");
   if(moduleOrder.innerHTML!==moduleOptions)moduleOrder.innerHTML=moduleOptions;
   moduleOrder.value=dataLayout.order[0];
   dataPanelKeys.forEach(k=>{
     var input=el("dataVisible"+k);
     input.checked=dataLayout.visible.includes(k);
     input.disabled=input.checked&&dataLayout.visible.length===1;
+    var select=el("dataModule"+k),moduleOptions=Object.keys(dataModuleNames).map(m=>'<option value="'+m+'">'+dataText(dataModuleNames[m])+'</option>').join("");
+    if(select.innerHTML!==moduleOptions)select.innerHTML=moduleOptions;
+    select.value=dataLayout.modules[k];
   });
-  var primary=el("dataPrimary"),options=dataLayout.visible.map(k=>'<option value="'+k+'">'+dataPanelNames[k]+'</option>').join("");
+  var primary=el("dataPrimary"),options=dataLayout.visible.map(k=>'<option value="'+k+'">'+dataText(dataSlotName(k))+'</option>').join("");
   if(primary.innerHTML!==options)primary.innerHTML=options;
   primary.value=dataLayout.primary;
   primary.disabled=dataLayout.visible.length!==2&&dataLayout.visible.length!==3;
@@ -1188,7 +1247,7 @@ function renderDataLayoutMenu(){
   var preview=el("dataLayoutPreview");
   preview.style.gridTemplateColumns=count===1?"1fr":"repeat(2,minmax(0,1fr))";
   preview.style.gridTemplateRows=count<=2?"1fr":"repeat(2,minmax(0,1fr))";
-  dataSet("dataLayoutPreview",dataPlacements(dataLayout,"").map(p=>'<div class="'+(p.key===dataLayout.primary&&(count===2||count===3)?"primary":"")+'" style="grid-column:'+p.column+';grid-row:'+p.row+'">'+dataPanelNames[p.key]+'</div>').join(""));
+  dataSet("dataLayoutPreview",dataPlacements(dataLayout,"").map(p=>'<div class="'+(p.key===dataLayout.primary&&(count===2||count===3)?"primary":"")+'" style="grid-column:'+p.column+';grid-row:'+p.row+'">'+dataText(dataSlotName(p.key))+'</div>').join(""));
   setText(el("dataLayoutNote"),dataFocus?"Temporary expanded view is active. Done returns to the display.":count===3?"Primary on the left; two panels stacked on the right.":count===2?"Two full-height panels.":count===1?"One full-screen panel.":"Four equal quadrants.");
 }
 function openDataLayout(){dataLayoutOpen=true;renderDataLayoutMenu();el("dataLayoutOverlay").classList.remove("hidden")}
@@ -1205,7 +1264,7 @@ function dataIdle(title,description){return '<div class="data-idle"><svg viewBox
 function dataRows(rows){return '<div class="data-rows">'+rows.filter(function(r){return dataKnown(r[1])}).map(function(r){return '<div class="data-row"><span>'+escapeHtml(r[0])+'</span><strong>'+dataText(r[1])+'</strong></div>'}).join("")+'</div>'}
 function dataBar(v){return typeof v==="number"&&Number.isFinite(v)?'<div class="data-bar"><span style="width:'+Math.max(0,Math.min(100,v))+'%"></span></div>':""}
 function dataChips(v){return '<div class="data-chips">'+dataArray(v).map(function(x){return '<span class="data-chip">'+dataText(x)+'</span>'}).join("")+'</div>'}
-function dataSet(id,html){var n=el(id);if(n.innerHTML!==html){var scroll=n.scrollTop;n.innerHTML=html;n.scrollTop=scroll||0}}
+function dataSet(id,html){var n=el(id);if(n._dataRendered!==html){var scroll=n.scrollTop;n.innerHTML=html;n._dataRendered=html;n.scrollTop=scroll||0}}
 function dataArtwork(type,body,hasRings){
   var t=String(type||"").toLowerCase(),shape="",label="Station type unclassified";
   if(body){
@@ -1357,8 +1416,10 @@ function pinDataTarget(){
   if(!dataDetailObject||dataDetailObject.address!==dataCurrent().addr)return;
   dataPinned=dataDetailObject;
   closeDataDetail();
-  if(!dataLayout.visible.includes("Target"))setDataVisible("Target",true);
-  if(dataFocus&&dataFocus!=="Target")setDataFocus("");
+  var slot=dataPanelKeys.find(k=>dataLayout.modules[k]==="target");
+  if(!slot){slot="Target";setDataModule(slot,"target")}
+  if(!dataLayout.visible.includes(slot))setDataVisible(slot,true);
+  if(dataFocus&&dataFocus!==slot)setDataFocus("");
   renderDataDisplay();
 }
 function clearDataPin(){dataPinned=null;renderDataDisplay()}
@@ -1399,6 +1460,50 @@ function dataOperations(mode,sc,status,ship,survey,nav){
   if(mode==="explore")return '<h4>EXPLORATION</h4>'+dataMetrics([["Known bodies",dataFmt(survey.knownBodies)],["Scanned",dataFmt(survey.personallyScannedBodies)],["Mapped",dataFmt(survey.personallyMappedBodies)]])+dataRows([["Estimated cartographic value",dataFmt(survey.currentSystemEstimate," Cr")],["Estimated completed biology",dataFmt(dataObj(survey.exobiology).currentSystemCompletedEstimate," Cr")]]);
   return '<h4>'+dataText(ship.name||ship.type||"Ship telemetry")+'</h4><div class="data-ops-gauges">'+dataGauge("Cargo",used,cap," t")+dataGauge("Main fuel",status.fuelMain,ship.fuelCapacity," t")+'</div>'+dataRows([["Ship type",ship.type],["Hull",dataFmt(ship.hullHealth,"%")]])+dataBar(ship.hullHealth)+dataRows([["Jump range",dataFmt(ship.maxJumpRange," Ly")],["Legal state",status.legalState]])+'<div class="data-sub">Latest Scout telemetry · '+dataText(sc.updatedAt)+'</div>';
 }
+function dataColonization(sc){
+  var cart=dataObj(sc.colonization),projects=dataArray(cart.projects),rows=dataArray(cart.rows);
+  if(!cart.enabled)return dataIdle("Colonization Logistics","Enable Raven Colonial in Mongrel Scout preferences.");
+  var note=cart.error?(cart.stale?"STALE · ":"")+cart.error:cart.updatedAt?"Raven report · "+cart.updatedAt:"Waiting for Raven report";
+  var html='<div class="data-module-summary"><strong>CONSTRUCTION LOGISTICS</strong></div><div class="data-module-source">'+dataText(note)+'</div>';
+  if(!projects.length)return html+dataIdle("No selected projects","Select construction projects in the existing Colonization Logistics controls.");
+  html+=dataMetrics([["Outstanding",dataFmt(cart.remaining," t")],["To collect",dataFmt(cart.toCollect," t")],["Delivery trips",dataFmt(cart.deliveryTrips)],["Collection trips",dataFmt(cart.collectionTrips)]]);
+  html+='<h5>SELECTED PROJECTS</h5>'+dataRows(projects.map(p=>[p.name||p.id,p.system||p.buildType]));
+  if(rows.length){
+    html+='<h5>REMAINING MATERIALS</h5><table class="data-colony-table"><thead><tr><th>Material</th><th>Need</th><th>Ship</th><th>Carrier</th><th>Collect</th></tr></thead><tbody>'+rows.map(v=>'<tr class="'+(v.fulfilled?"ready":v.available===false?"unavailable":"")+'"><td>'+dataText(v.name||v.key)+'</td><td>'+dataFmt(v.need)+'</td><td>'+dataFmt(v.ship)+'</td><td>'+dataFmt(v.carrier)+'</td><td class="'+(typeof v.toCollect==="number"&&v.toCollect>0?"need":"")+'">'+(cart.toCollect==null?"—":dataFmt(v.toCollect))+'</td></tr>').join("")+'</tbody></table>';
+  }else html+='<div class="data-sub">No outstanding material rows reported.</div>';
+  return html+'<div class="data-module-source">Read only · Raven / Scout · Unknown inventory remains unknown. Trip estimates use reported cargo capacity.</div>';
+}
+function dataCarrier(sc,app){
+  var owner=dataObj(sc.ownerCarrier),live=dataObj(app&&app.carrierLive),journey=dataObj(app&&app.carrierJourney),hasLive=!!live.status&&live.status!=="unknown",cd=hasLive?live:dataObj(journey.cooldown),status=String(cd.status||"unknown");
+  var labels={scheduled:"JUMP PLOTTED",jump_expected:"IN TRANSIT (EST.)",estimated_cooldown:"CARRIER COOLDOWN (EST.)",estimated_ready:"ESTIMATED READY · VERIFY",unverified:"JUMP STATUS UNVERIFIED",cooldown:"CARRIER COOLDOWN",ready:"COOLDOWN COMPLETE"};
+  var name=hasLive?live.label:labels[status]||"NO CURRENT CARRIER JUMP";
+  var timed=["plotted","lockdown","transit","scheduled","jump_expected","estimated_cooldown","cooldown"].includes(status)&&typeof cd.remainingSeconds==="number";
+  var pad=hasLive&&live.padStatus==="upcoming"?"Pad lockdown in "+carrierCountdown(live.padRemainingSeconds)+" · estimated":hasLive&&live.padStatus==="locked"?"Pad lockdown active · estimated":"";
+  var html='<h4>'+dataText(owner.name||owner.callsign||"Fleet Carrier")+'</h4><div class="data-carrier-phase"><strong class="'+(status==="ready"?"ready":"")+'">'+dataText(name)+'</strong>'+(timed?'<div class="timer">'+dataText(carrierCountdown(cd.remainingSeconds))+'</div>':"")+(pad?'<div class="warning">'+dataText(pad)+'</div>':"")+'<div class="data-sub">'+dataText(cd.detail||(cd.estimated?"Estimated schedule; arrival not confirmed":"Journal / route status"))+'</div></div>';
+  html+=dataRows([["Jump destination",live.destinationSystem],["Callsign",owner.callsign]]);
+  if(journey.status==="active"||journey.status==="completed"){
+    html+='<h5>TRACKED CARRIER JOURNEY</h5>'+dataMetrics([["Jumps complete",typeof journey.completedJumps==="number"&&typeof journey.totalJumps==="number"?journey.completedJumps+" / "+journey.totalJumps:undefined],["Remaining jumps",dataFmt(journey.remainingJumps)],["Estimated tritium",dataFmt(journey.estimatedTritiumRemaining," t")]])+dataBar(typeof journey.completedJumps==="number"&&journey.totalJumps>0?100*journey.completedJumps/journey.totalJumps:null)+dataRows([["Next system",journey.nextSystem],["Route status",journey.status==="completed"?"Complete":journey.paused?"Paused":"Active"]]);
+  }else html+='<div class="data-sub">No active carrier journey. Plot and start a route in the existing Fleet Carrier controls.</div>';
+  return html+'<div class="data-module-source">Read only · HUD carrier journal / route tracking</div>';
+}
+function dataModuleDirectory(module,report,slot){
+  if(module==="map")return '<div class="data-list">'+dataSystemTree(report)+'</div>';
+  var rows=dataArray(report[module]);
+  if(module==="factions")return rows.length?rows.map(v=>dataFaction(v,report.controllingFaction)).join(""):dataIdle("Faction intelligence","No factions reported.");
+  var query=String(dataModuleFilters[slot]||"").toLowerCase().trim();
+  var visible=rows.map((v,i)=>({v,i})).filter(x=>!query||[x.v.name,x.v.type,x.v.primaryEconomy,x.v.body,x.v.faction,...dataArray(x.v.services),...dataArray(x.v.economies).map(e=>e.name),...dataArray(x.v.materials).map(m=>m.name)].some(v=>String(v||"").toLowerCase().includes(query)));
+  return '<div class="data-sub">'+visible.length+' / '+rows.length+' reported</div><div class="data-list">'+(visible.length?visible.map(({v,i})=>'<button type="button" data-object-kind="'+module+'" data-object-index="'+i+'"><span class="data-directory-title"><strong>'+dataText(v.name)+'</strong><small>'+[v.type,v.primaryEconomy].filter(Boolean).map(dataText).join(" · ")+'</small></span><small>'+dataFmt(v.distance," Ls")+' ›</small></button>').join(""):'<div class="data-sub">No matching objects.</div>')+'</div>';
+}
+function renderDataModules(c,status,ship,survey,nav){
+  dataPanelKeys.forEach(k=>{
+    var m=dataLayout.modules[k];
+    if(dataModuleNative[m])return;
+    var html=m==="colonization"?dataColonization(c.sc):m==="carrier"?dataCarrier(c.sc,state):["factions","stations","bodies","map"].includes(m)?dataModuleDirectory(m,c.report,k):dataOperations(m,c.sc,status,ship,survey,nav);
+    // Scout disconnect must not silently present last ship/carrier readings as live.
+    if(!(state&&state.connected)&&!["factions","stations","bodies","map"].includes(m))html='<div class="data-module-source">Scout disconnected · Last reported data</div>'+html;
+    dataSet("dataModuleExtra"+k,html);
+  });
+}
 function renderDataDisplay(){
   if(controllerTab!=="data")return;
   var c=dataCurrent(),sc=c.sc,sys=c.sys,report=c.report,status=dataObj(sc.status),ship=dataObj(sc.ship),target=dataObj(sc.target),dest=dataObj(status.destination),survey=dataObj(sc.exploration),nav=dataObj(sc.navigation);
@@ -1410,7 +1515,7 @@ function renderDataDisplay(){
   setText(el("dataSource"),!(state&&state.connected)?"Scout disconnected · last observation":dataLoading?"Receiving Spansh data…":source.status==="available"?"Spansh · retrieved "+age(new Date(source.fetchedAt*1000).toISOString())+" ago":source.status==="stale"?"Spansh unavailable · cached data":source.status==="unavailable"?"Spansh unavailable":"Awaiting community data");
   dataSet("dataSystem",dataRows([["Population",dataFmt(report.population)],["Controlling faction",report.controllingFaction],["Economy",report.economy],["Power",report.power]])+'<div class="data-sub">Reported '+dataArray(report.stations).length+' stations · '+dataArray(report.bodies).length+' bodies · '+dataArray(report.factions).length+' factions</div>');
   ["factions","stations","bodies","map"].forEach(k=>el("data"+k[0].toUpperCase()+k.slice(1)).classList.toggle("active",dataDirectoryMode===k));
-  if(dataFilterAddress!==c.addr){dataFilterAddress=c.addr;dataFilter="";dataTreeClosed.clear();el("dataSearch").value=""}
+  if(dataFilterAddress!==c.addr){dataFilterAddress=c.addr;dataFilter="";dataTreeClosed.clear();dataModuleFilters={};el("dataSearch").value=""}
   el("dataDirectorySearch").hidden=dataDirectoryMode==="factions"||dataDirectoryMode==="map";
   el("dataStationFilter").hidden=dataDirectoryMode!=="stations";
   var directory=dataArray(report[dataDirectoryMode]);
@@ -1423,10 +1528,11 @@ function renderDataDisplay(){
   ["auto","ship","explore","route","cargo"].forEach(k=>el("data"+k[0].toUpperCase()+k.slice(1)).classList.toggle("active",dataOpsMode===k));
   var mode=dataOpsMode==="auto"?(nav.active?"route":(state&&state.profile)==="exploration"?"explore":"ship"):dataOpsMode;
   dataSet("dataOps",dataOperations(mode,sc,status,ship,survey,nav));
+  renderDataModules(c,status,ship,survey,nav);
   refreshDataDisplay(false);
 }
 applyDataLayout();
-dataPanelKeys.forEach(k=>{el("dataExpand"+k).onclick=function(){setDataFocus(k)};el("dataHide"+k).onclick=function(){if(!dataFocus)setDataVisible(k,false)};el("dataVisible"+k).onchange=function(){setDataVisible(k,el("dataVisible"+k).checked)}});
+dataPanelKeys.forEach(k=>{el("dataExpand"+k).onclick=function(){setDataFocus(k)};el("dataHide"+k).onclick=function(){if(!dataFocus)setDataVisible(k,false)};el("dataVisible"+k).onchange=function(){setDataVisible(k,el("dataVisible"+k).checked)};el("dataModule"+k).onchange=function(){setDataModule(k,el("dataModule"+k).value)};el("dataModuleExtra"+k).onclick=function(e){var toggle=e.target.closest("[data-tree-toggle]");if(toggle){var i=Number(toggle.getAttribute("data-tree-toggle"));if(dataTreeClosed.has(i))dataTreeClosed.delete(i);else dataTreeClosed.add(i);renderDataDisplay();return}var b=e.target.closest("[data-object-kind]");if(b)openDataDetail(b.getAttribute("data-object-kind"),Number(b.getAttribute("data-object-index")))}});
 el("dataLayoutOpen").onclick=openDataLayout;
 el("dataLayoutClose").onclick=closeDataLayout;
 el("dataLayoutDone").onclick=closeDataLayout;
