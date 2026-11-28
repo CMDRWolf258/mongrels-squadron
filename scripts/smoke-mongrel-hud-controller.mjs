@@ -1072,7 +1072,9 @@ console.log("✓ Data Display persistent layouts, primary selection, focus resto
   assert.equal(c.dataStationMatches({pads:{large:0}},"large"),false);
   const tree=c.dataSystemTree({bodies:[{name:"Star",bodyId:0},{name:"Planet",bodyId:1,parents:[{kind:"Star",id:0}]}],stations:[{name:"Port",body:"Planet",type:"Orbis"}]});
   assert.match(tree,/Port/);assert.match(tree,/data-object-index="1"/);
-  assert.ok(tree.indexOf("Star")<tree.indexOf("Planet"));
+  assert.ok(tree.includes("<span>Star<small>") && tree.includes("<span>Planet<small>"));
+  assert.ok(tree.indexOf("<span>Star<small>")<tree.indexOf("<span>Planet<small>"));
+  assert.match(tree,/margin-left:12px[^]*data-object-index="1"/);
   c.setDataVisible("Contact",false);c.setDataPrimary("Target");
   assert.equal(c.saveDataProfile("My hauling"),true);
   c.resetDataLayout();assert.equal(c.loadDataProfile("s0"),true);
