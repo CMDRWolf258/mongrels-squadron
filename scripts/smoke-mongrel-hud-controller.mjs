@@ -61,7 +61,7 @@ function harness(storage = new Map()) {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,dataBody,dataStation,dataFaction,dataOperations,dataSignalLabel,setDataFocus,dataPlacements,setDataVisible,setDataPrimary,resetDataLayout,openDataLayout,closeDataLayout,pinDataTarget,clearDataPin,getDataLayout(){return dataLayout},openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,dataBody,dataStation,dataFaction,dataOperations,dataSignalLabel,dataSystemTree,dataStationMatches,saveDataProfile,loadDataProfile,deleteDataProfile,setDataModuleFirst,setDataFocus,dataPlacements,setDataVisible,setDataPrimary,resetDataLayout,openDataLayout,closeDataLayout,pinDataTarget,clearDataPin,getDataLayout(){return dataLayout},openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -1060,3 +1060,26 @@ console.log("✓ Enlarged data controls, station illustrations, categorized serv
   assert.doesNotMatch(h.node("dataTarget").innerHTML,/PINNED|Alpha/);
 }
 console.log("✓ Data Display persistent layouts, primary selection, focus restore, last-panel guard and scoped target pin");
+
+{
+  const h=harness(),c=h.controller;
+  const station=c.dataStation({name:"Saturn",type:"Coriolis",economies:[{name:"Military",percent:240},{name:"Extraction",percent:200}]},true);
+  assert.match(station,/240%/);assert.match(station,/200%/);assert.match(station,/Not normalized/);
+  assert.match(station,/ADD TYPE SCREENSHOT/);
+  const body=c.dataBody({name:"Planet 3",landable:true,materials:[{name:"Iron",percent:21.4},{name:"Selenium",percent:3.2}]});
+  assert.match(body,/Iron/);assert.match(body,/21.4%/);assert.match(body,/Selenium/);assert.match(body,/3.2%/);
+  assert.equal(c.dataStationMatches({pads:{large:1}},"large"),true);
+  assert.equal(c.dataStationMatches({pads:{large:0}},"large"),false);
+  const tree=c.dataSystemTree({bodies:[{name:"Star",bodyId:0},{name:"Planet",bodyId:1,parents:[{kind:"Star",id:0}]}],stations:[{name:"Port",body:"Planet",type:"Orbis"}]});
+  assert.match(tree,/Port/);assert.match(tree,/data-object-index="1"/);
+  assert.ok(tree.includes("<span>Star<small>") && tree.includes("<span>Planet<small>"));
+  assert.ok(tree.indexOf("<span>Star<small>")<tree.indexOf("<span>Planet<small>"));
+  assert.match(tree,/margin-left:12px[^]*data-object-index="1"/);
+  c.setDataVisible("Contact",false);c.setDataPrimary("Target");
+  assert.equal(c.saveDataProfile("My hauling"),true);
+  c.resetDataLayout();assert.equal(c.loadDataProfile("s0"),true);
+  assert.equal(c.getDataLayout().primary,"Target");
+  assert.equal(c.getDataLayout().visible.includes("Contact"),false);
+  c.setDataModuleFirst("Ops");assert.equal(c.getDataLayout().order[0],"Ops");
+}
+console.log("✓ Independent economy strengths, body materials, orbital tree, station filters and saved profiles");

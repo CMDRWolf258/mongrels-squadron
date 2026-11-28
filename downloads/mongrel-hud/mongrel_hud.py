@@ -55,7 +55,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.32"
+APP_VERSION = "0.18.33"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1859,27 +1859,51 @@ def display_number(value):
 
 
 def display_economies(value):
-    """Use reported composition, not inferred primary/secondary percentages."""
+    """Spansh dictionaries already hold percent strengths, not fractions.
+    Journal Proportion fields explicitly use fractional units. Never infer
+    units from a sum or cap a colonized station at 100 percent.
+    """
     rows = []
     if isinstance(value, dict):
-        value = [{"name": k, "proportion": v} for k, v in value.items()]
+        value = [{"name": k, "percentage": v} for k, v in value.items()]
     if not isinstance(value, list):
         return rows
     for item in value[:30]:
         if not isinstance(item, dict):
             continue
         name = display_text(item.get("name") or item.get("Name_Localised") or item.get("Name"))
-        amount = display_number(item.get("proportion", item.get("Proportion", item.get("percentage"))))
+        if "percentage" in item:
+            amount = display_number(item["percentage"])
+        else:
+            amount = display_number(item.get("Proportion", item.get("proportion")))
+            if amount is not None:
+                amount *= 100
         if name and amount is not None and amount >= 0:
-            rows.append({"name": name, "percent": amount})
-    total = sum(row["percent"] for row in rows)
-    if 0.98 <= total <= 1.02:
-        for row in rows:
-            row["percent"] = round(row["percent"] * 100, 2)
-    elif not 98 <= total <= 102:
-        # A partial/unknown denominator is not a valid economy breakdown.
-        return []
+            rows.append({"name": name, "percent": round(amount, 6)})
     return sorted(rows, key=lambda row: -row["percent"])
+
+
+def display_materials(value):
+    if not isinstance(value, dict):
+        return []
+    rows = []
+    for k,v in list(value.items())[:100]:
+        name = display_text(k)
+        amount = display_number(v)
+        if name and amount is not None and 0 <= amount <= 100:
+            rows.append({"name": name, "percent": amount})
+    return sorted(rows, key=lambda row: (-row["percent"], row["name"]))
+
+
+def display_parents(value):
+    out = []
+    if isinstance(value, list):
+        for parent in value[:32]:
+            if isinstance(parent, dict):
+                for kind, ident in parent.items():
+                    if isinstance(ident, int) and not isinstance(ident, bool) and 0 <= ident < 1000000:
+                        out.append({"kind": display_text(kind, 30), "id": ident})
+    return out
 
 
 def display_system_dump(payload, name, address):
@@ -1903,7 +1927,7 @@ def display_system_dump(payload, name, address):
         pads = {k: display_number(pads.get(k)) for k in ("small", "medium", "large")} if isinstance(pads, dict) else {}
         row = {"name": n, "type": display_text(s.get("type")), "body": body,
                "distance": display_number(s.get("distanceToArrival")),
-               "faction": label(s.get("controllingFaction")), "allegiance": label(s.get("allegiance")),
+               "faction": label(s.get("controllingFaction")), "factionState": label(s.get("controllingFactionState")), "allegiance": label(s.get("allegiance")),
                "government": label(s.get("government")), "primaryEconomy": label(s.get("primaryEconomy") or s.get("economy")),
                "economies": display_economies(s.get("economies")), "services": strings(s.get("services")),
                "pads": pads, "updatedAt": display_text(s.get("updateTime") or s.get("updatedAt"))}
@@ -1931,7 +1955,9 @@ def display_system_dump(payload, name, address):
         signals = b.get("signals")
         counts = signals.get("signals") if isinstance(signals, dict) else {}
         bodies.append({"name": bn, "bodyId": display_number(b.get("bodyId")),
-                       "type": display_text(b.get("subType") or b.get("type")),
+                       "type": display_text(b.get("subType") or b.get("type")), "kind": display_text(b.get("type")),
+                       "parents": display_parents(b.get("parents")), "mainStar": b.get("mainStar") is True,
+                       "materials": display_materials(b.get("materials")), "updatedAt": display_text(b.get("updateTime")),
                        "distance": display_number(b.get("distanceToArrival")), "gravity": display_number(b.get("gravity")),
                        "temperature": display_number(b.get("surfaceTemperature")),
                        "atmosphere": display_text(b.get("atmosphereType")), "volcanism": display_text(b.get("volcanismType")),
@@ -1951,6 +1977,7 @@ def display_system_dump(payload, name, address):
             influence = None
         factions.append({"name": display_text(f.get("name")), "influence": influence,
                          "state": label(f.get("state")), "states": strings(f.get("activeStates")),
+                         "pending": strings(f.get("pendingStates")), "recovering": strings(f.get("recoveringStates")),
                          "allegiance": label(f.get("allegiance")), "government": label(f.get("government"))})
     return {"name": name, "address": address, "population": display_number(system.get("population")),
             "security": label(system.get("security")), "allegiance": label(system.get("allegiance")),
