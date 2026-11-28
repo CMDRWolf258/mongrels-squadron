@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.32"
+assert hud.APP_VERSION=="0.18.33"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -118,12 +118,13 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.29"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.30"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.31"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.32"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.33"}) is True
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.33"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.34"}) is True
 release=hud.update_from_release_payload({
-    "name":"Mongrel HUD Windows v0.18.33",
+    "name":"Mongrel HUD Windows v0.18.34",
     "assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://github.com/CMDRWolf258/mongrels-squadron/releases/download/mongrel-hud-latest/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64,"size":123456789}],
 })
-assert release["version"]=="0.18.33" and release["digest"]=="sha256:"+"a"*64
+assert release["version"]=="0.18.34" and release["digest"]=="sha256:"+"a"*64
 assert hud.version_tuple(release["version"])>hud.version_tuple(hud.APP_VERSION)
 try:
     hud.update_from_release_payload({"name":"Mongrel HUD Windows v0.16.1","assets":[{"name":"MongrelHUD-Windows.zip","browser_download_url":"https://evil.invalid/MongrelHUD-Windows.zip","digest":"sha256:"+"a"*64}]})
@@ -714,7 +715,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.32"
+    assert hud.APP_VERSION=="0.18.33"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -1160,14 +1161,18 @@ print("✓ Ship control deck preset selection, mapping validation, extended navi
 # are deduplicated and associated with the host body.
 sample={"system":{"id64":123,"name":"Test","population":4500000000,"controllingFaction":{"name":"Faction"},
  "factions":[{"name":"Faction","influence":0.42,"state":"Boom"}],
- "stations":[{"marketId":77,"name":"Port","type":"Orbis","economies":{"Industrial":0.65,"Extraction":0.35},"services":["Market","Repair"]}],
+ "stations":[{"marketId":77,"name":"Port","type":"Orbis","economies":{"Industrial":65,"Extraction":35},"services":["Market","Repair"]}],
  "bodies":[{"name":"Test A 1","bodyId":1,"isLandable":True,"stations":[{"marketId":77,"name":"Port","type":"Orbis"}]}]}}
 d=hud.display_system_dump(sample,"Test","123")
 assert d["factions"][0]["influence"]==42
 assert len(d["stations"])==1 and d["stations"][0]["body"]=="Test A 1"
 assert d["stations"][0]["economies"]==[{"name":"Industrial","percent":65.0},{"name":"Extraction","percent":35.0}]
 assert d["stations"][0]["services"]==["Market","Repair"]
-assert hud.display_economies({"Industrial":0.4})==[]
+assert hud.display_economies({"Industrial":0.4})==[{"name":"Industrial","percent":0.4}]
+assert hud.display_economies({"Military":240,"Extraction":200,"Industrial":150})[0]["percent"]==240
+assert hud.display_economies([{"Name_Localised":"Military","Proportion":2.4}])[0]["percent"]==240
+assert hud.display_materials({"Iron":21.4,"Selenium":3.2})==[{"name":"Iron","percent":21.4},{"name":"Selenium","percent":3.2}]
+assert hud.display_parents([{"Planet":2},{"Star":0}])==[{"kind":"Planet","id":2},{"kind":"Star","id":0}]
 assert hud.display_economies({"Industrial":65,"Extraction":35})[0]["percent"]==65
 try:
     hud.display_system_dump(sample,"Other","123")

@@ -343,6 +343,31 @@ main.data-wide>.controller-tabs button{min-height:39px}
 .data-detail-head .data-detail-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .data-detail-head .data-detail-actions button{min-height:44px}
 @media(max-width:620px){.data-hide{width:34px;min-width:34px}.data-panel-actions{gap:3px}.data-panel-actions .data-expand{width:56px;min-width:56px}.data-banner-tools{flex-wrap:wrap}.data-banner-tools .data-button{font-size:.62rem}}
+
+.data-economy-track{height:6px;background:#203a46;border-radius:4px;overflow:hidden;margin:2px 0 5px}
+.data-economy-track span{display:block;height:100%;border-radius:4px}
+.data-materials{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 9px}
+.data-material{padding:4px 5px;border:1px solid #2c4b59;border-radius:5px;background:#102d3a;font-size:.77rem;display:flex;justify-content:space-between;gap:5px}
+.data-material strong{color:#b5e5f0;font-variant-numeric:tabular-nums}
+.data-profile-tools{display:flex;gap:5px;flex-wrap:wrap;margin:7px 0}
+.data-profile-tools select,.data-profile-tools input,.data-layout-option select,.data-filter-select{min-height:42px;min-width:0;border:1px solid #355565;border-radius:6px;background:#102b38;color:#d2e8ef;padding:5px;font:inherit}
+.data-profile-tools select,.data-profile-tools input{flex:1}
+.data-profile-tools button{min-height:42px}
+.data-layout-option select{max-width:55%;font-size:.8rem}
+.data-tree-row{display:flex;align-items:center;gap:5px;border-left:1px solid #41616f;margin:3px 0}
+.data-tree-row .data-tree-toggle{flex:none;width:30px;min-height:36px;justify-content:center;padding:3px}
+.data-tree-row .data-tree-object{flex:1;min-width:0;justify-content:flex-start;gap:8px;text-align:left;padding:5px;min-height:44px}
+.data-tree-row svg{width:46px;height:36px;flex:none}
+.data-tree-row small{display:block;text-align:left}
+.data-tree-note{font-size:.68rem;color:#8caebd;padding:4px 0}
+.data-filter-select{width:100%;min-height:34px;font-size:.78rem;margin-bottom:3px}
+.data-photo{width:100%;max-height:210px;object-fit:cover;border-radius:7px;border:1px solid #355565}
+.data-hero .data-photo{width:43%;max-width:250px}
+#dataTab .data-hero .data-photo{width:28%;max-width:140px}
+.data-photo-controls{display:flex;flex-wrap:wrap;gap:6px;margin:5px 0 8px}
+.data-photo-controls button{min-height:42px}
+.data-photo-controls input{display:none}
+.data-photo-credit{font-size:.67rem;color:#95b8c8}
 </style>
 </head>
 <body>
@@ -356,7 +381,7 @@ main.data-wide>.controller-tabs button{min-height:39px}
   <section id="dataTab" class="hidden">
     <div class="data-banner"><div><div class="data-kicker">MONGREL // SYSTEM INTELLIGENCE</div><h2 id="dataSystemName">Awaiting telemetry</h2><div id="dataSystemMeta" class="data-sub"></div></div><div><div class="data-status" id="dataSource">Waiting for Scout</div><div class="data-banner-tools"><button class="data-button" id="dataRefresh" type="button">REFRESH DATA</button><button class="data-button" id="dataLayoutOpen" type="button" aria-label="Configure Data Display layout">LAYOUT · 4</button></div></div></div>
     <div class="data-grid" id="dataGrid">
-      <section class="data-panel" id="dataPanelSystem"><div class="data-panel-head"><h3>01 / SYSTEM DIRECTORY</h3><div class="data-panel-actions"><button type="button" class="data-hide" id="dataHideSystem" aria-label="Hide system directory" title="Hide panel">−</button><button type="button" class="data-expand" id="dataExpandSystem" aria-label="Expand system directory">⛶</button></div></div><div id="dataSystem"></div><div class="data-section-tabs"><button id="dataFactions" type="button">FACTIONS</button><button id="dataStations" type="button">STATIONS</button><button id="dataBodies" type="button">BODIES</button></div><div id="dataDirectorySearch" class="data-directory-search" hidden><input id="dataSearch" type="search" autocomplete="off" placeholder="Filter directory" aria-label="Filter system directory"><button id="dataSearchClear" type="button" aria-label="Clear filter">×</button></div><div id="dataDirectory" class="data-list"></div></section>
+      <section class="data-panel" id="dataPanelSystem"><div class="data-panel-head"><h3>01 / SYSTEM DIRECTORY</h3><div class="data-panel-actions"><button type="button" class="data-hide" id="dataHideSystem" aria-label="Hide system directory" title="Hide panel">−</button><button type="button" class="data-expand" id="dataExpandSystem" aria-label="Expand system directory">⛶</button></div></div><div id="dataSystem"></div><div class="data-section-tabs"><button id="dataFactions" type="button">FACTIONS</button><button id="dataStations" type="button">STATIONS</button><button id="dataBodies" type="button">BODIES</button><button id="dataMap" type="button">MAP</button></div><div id="dataDirectorySearch" class="data-directory-search" hidden><input id="dataSearch" type="search" autocomplete="off" placeholder="Filter directory" aria-label="Filter system directory"><button id="dataSearchClear" type="button" aria-label="Clear filter">×</button></div><select id="dataStationFilter" class="data-filter-select" aria-label="Station filter" hidden><option value="all">All facilities</option><option value="large">Large pads</option><option value="orbital">Orbital starports</option><option value="surface">Surface facilities</option><option value="carrier">Fleet carriers</option><option value="market">Commodity market</option><option value="shipyard">Shipyard</option><option value="repair">Repair</option></select><div id="dataDirectory" class="data-list"></div></section>
       <section class="data-panel" id="dataPanelTarget"><div class="data-panel-head"><h3>02 / NAVIGATION TARGET</h3><div class="data-panel-actions"><button type="button" class="data-hide" id="dataHideTarget" aria-label="Hide navigation target" title="Hide panel">−</button><button type="button" class="data-expand" id="dataExpandTarget" aria-label="Expand navigation target">⛶</button></div></div><div id="dataTarget" class="data-panel-scroll"></div></section>
       <section class="data-panel" id="dataPanelContact"><div class="data-panel-head"><h3>03 / SHIP CONTACT</h3><div class="data-panel-actions"><button type="button" class="data-hide" id="dataHideContact" aria-label="Hide ship contact" title="Hide panel">−</button><button type="button" class="data-expand" id="dataExpandContact" aria-label="Expand ship contact">⛶</button></div></div><div id="dataContact" class="data-panel-scroll"></div></section>
       <section class="data-panel" id="dataPanelOps"><div class="data-panel-head"><h3>04 / OPERATIONS</h3><div class="data-panel-actions"><button type="button" class="data-hide" id="dataHideOps" aria-label="Hide operations" title="Hide panel">−</button><button type="button" class="data-expand" id="dataExpandOps" aria-label="Expand operations">⛶</button></div></div><div class="data-section-tabs"><button id="dataAuto" type="button">AUTO</button><button id="dataShip" type="button">SHIP</button><button id="dataExplore" type="button">EXPLORATION</button><button id="dataRoute" type="button">ROUTE</button><button id="dataCargo" type="button">CARGO</button></div><div id="dataOps" class="data-panel-scroll"></div></section>
@@ -368,13 +393,17 @@ main.data-wide>.controller-tabs button{min-height:39px}
     <div class="data-detail data-layout-modal">
       <div class="data-detail-head"><h2>DISPLAY LAYOUT</h2><button id="dataLayoutClose" type="button" class="data-button">DONE</button></div>
       <div class="data-sub">Choose which panels to show. One panel is always visible. Expanding a panel temporarily overrides this layout.</div>
+      <div class="data-kicker">DISPLAY PROFILES</div>
+      <div class="data-profile-tools"><select id="dataProfileSelect" aria-label="Saved display profile"></select><button id="dataProfileLoad" class="data-button" type="button">LOAD</button><button id="dataProfileDelete" class="data-button" type="button">DELETE</button></div>
+      <div class="data-profile-tools"><input id="dataProfileName" maxlength="40" placeholder="Profile name" aria-label="Profile name"><button id="dataProfileSave" class="data-button" type="button">SAVE CURRENT</button></div>
+      <div id="dataProfileNotice" class="data-sub" role="status"></div>
       <div class="data-layout-options">
         <div class="data-layout-option"><label><input id="dataVisibleSystem" type="checkbox">System Directory</label></div>
         <div class="data-layout-option"><label><input id="dataVisibleTarget" type="checkbox">Navigation Target</label></div>
         <div class="data-layout-option"><label><input id="dataVisibleContact" type="checkbox">Ship Contact</label></div>
         <div class="data-layout-option"><label><input id="dataVisibleOps" type="checkbox">Operations</label></div>
       </div>
-      <label for="dataPrimary">Primary panel (left side in two- or three-panel mode)</label>
+      <label for="dataModuleOrder">Panel order (first panel moves to top left in four-panel mode)</label><select id="dataModuleOrder" class="data-layout-primary"></select><label for="dataPrimary">Primary panel (left side in two- or three-panel mode)</label>
       <select id="dataPrimary" class="data-layout-primary"></select>
       <div id="dataLayoutPreview" class="data-layout-preview" aria-label="Layout preview"></div>
       <div id="dataLayoutNote" class="data-sub" role="status"></div>
@@ -1023,19 +1052,22 @@ el("deckControls").onclick=async function(e){
   finally{deckBusy=false}
 };
 
-var dataReport=null,dataLoading=false,dataLastAttempt=0,dataRequestedAddress="",dataDirectoryMode="factions",dataOpsMode="auto",dataDetailKey="",dataFocus="",dataFilter="",dataFilterAddress="",dataDetailObject=null,dataPinned=null;
+var dataReport=null,dataLoading=false,dataLastAttempt=0,dataRequestedAddress="",dataDirectoryMode="factions",dataOpsMode="auto",dataDetailKey="",dataFocus="",dataFilter="",dataFilterAddress="",dataDetailObject=null,dataPinned=null,dataTreeClosed=new Set(),dataStationFilter="all";
 var dataPanelKeys=["System","Target","Contact","Ops"],dataPanelNames={System:"System Directory",Target:"Navigation Target",Contact:"Ship Contact",Ops:"Operations"},dataLayoutKey="mongrel-hud-data-layout-v1",dataLayout=readDataPreferences(),dataLayoutOpen=false;
 dataDirectoryMode=dataLayout.directory;dataOpsMode=dataLayout.ops;
+var dataProfiles=readDataProfiles(),dataPhotos=readDataPhotos();
 function dataObj(v){return v&&typeof v==="object"?v:{}}
 function dataArray(v){return Array.isArray(v)?v:[]}
 function dataFmt(v,suffix){return typeof v==="number"&&Number.isFinite(v)?v.toLocaleString(undefined,{maximumFractionDigits:2})+(suffix||""):"—"}
 function dataText(v){return v===null||v===undefined||v===""?"—":escapeHtml(String(v))}
 function normalizeDataPreferences(value){
   var v=value&&typeof value==="object"?value:{};
-  var shown=dataPanelKeys.filter(k=>!Array.isArray(v.visible)||v.visible.includes(k));
+  var order=Array.isArray(v.order)?v.order.filter((k,i,a)=>dataPanelKeys.includes(k)&&a.indexOf(k)===i):[];
+  order=order.concat(dataPanelKeys.filter(k=>!order.includes(k)));
+  var shown=order.filter(k=>!Array.isArray(v.visible)||v.visible.includes(k));
   if(!shown.length)shown=dataPanelKeys.slice();
-  return {visible:shown,primary:shown.includes(v.primary)?v.primary:shown[0],
-    directory:["factions","stations","bodies"].includes(v.directory)?v.directory:"factions",
+  return {visible:shown,order:order,primary:shown.includes(v.primary)?v.primary:shown[0],
+    directory:["factions","stations","bodies","map"].includes(v.directory)?v.directory:"factions",
     ops:["auto","ship","explore","route","cargo"].includes(v.ops)?v.ops:"auto"};
 }
 function readDataPreferences(){
@@ -1093,10 +1125,56 @@ function setDataPrimary(key){
   dataLayout.primary=key;saveDataPreferences();applyDataLayout();
 }
 function resetDataLayout(){
-  dataFocus="";dataLayout.visible=dataPanelKeys.slice();dataLayout.primary="System";
+  dataFocus="";dataLayout.visible=dataPanelKeys.slice();dataLayout.order=dataPanelKeys.slice();dataLayout.primary="System";
+  saveDataPreferences();applyDataLayout();
+}
+function readDataProfiles(){
+  try{var raw=JSON.parse(localStorage.getItem("mongrel-hud-display-profiles-v1")||"[]");return Array.isArray(raw)?raw.filter(v=>v&&typeof v.name==="string"&&v.name.length<=40&&v.layout).slice(0,24).map(v=>({name:v.name,layout:normalizeDataPreferences(v.layout)})):[]}catch(_){return []}
+}
+function dataProfilePresets(){
+  return [
+    {name:"Hauling",layout:{visible:["Target","System","Ops"],primary:"Target",directory:"stations",ops:"cargo"}},
+    {name:"BGS",layout:{visible:["System","Target","Ops"],primary:"System",directory:"factions",ops:"ship"}},
+    {name:"Exploration",layout:{visible:["System","Target","Ops"],primary:"System",directory:"map",ops:"explore"}},
+    {name:"Combat",layout:{visible:["Contact","Target","Ops"],primary:"Contact",directory:"bodies",ops:"ship"}}
+  ];
+}
+function renderDataProfiles(){
+  var select=el("dataProfileSelect"),old=select.value,options=dataProfilePresets().map((v,i)=>'<option value="p'+i+'">'+dataText(v.name)+' (preset)</option>').concat(dataProfiles.map((v,i)=>'<option value="s'+i+'">'+dataText(v.name)+'</option>')).join("");
+  if(select.innerHTML!==options)select.innerHTML=options;
+  if(/^[ps]\d+$/.test(old))select.value=old;
+}
+function persistDataProfiles(){try{localStorage.setItem("mongrel-hud-display-profiles-v1",JSON.stringify(dataProfiles))}catch(_){return false}return true}
+function saveDataProfile(name){
+  name=String(name||"").trim().slice(0,40);if(!name)return false;
+  var index=dataProfiles.findIndex(v=>v.name.toLowerCase()===name.toLowerCase());
+  if(index<0&&dataProfiles.length>=24)return false;
+  var profile={name:name,layout:normalizeDataPreferences(dataLayout)};
+  if(index<0){index=dataProfiles.length;dataProfiles.push(profile)}else dataProfiles[index]=profile;
+  var saved=persistDataProfiles();renderDataProfiles();el("dataProfileSelect").value="s"+index;
+  setText(el("dataProfileNotice"),saved?"Saved "+name:"Saved for this session only (storage unavailable).");
+  return true;
+}
+function loadDataProfile(key){
+  var m=/^([ps])(\d+)$/.exec(String(key||""));if(!m)return false;
+  var profile=(m[1]==="p"?dataProfilePresets():dataProfiles)[Number(m[2])];if(!profile)return false;
+  dataFocus="";dataLayout=normalizeDataPreferences(profile.layout);dataDirectoryMode=dataLayout.directory;dataOpsMode=dataLayout.ops;
+  dataFilter="";el("dataSearch").value="";saveDataPreferences();applyDataLayout();renderDataDisplay();setText(el("dataProfileNotice"),"Loaded "+profile.name);return true;
+}
+function deleteDataProfile(key){
+  var m=/^s(\d+)$/.exec(String(key||""));if(!m||!dataProfiles[Number(m[1])])return false;
+  dataProfiles.splice(Number(m[1]),1);persistDataProfiles();renderDataProfiles();el("dataProfileSelect").value="p0";setText(el("dataProfileNotice"),"Profile removed");return true;
+}
+function setDataModuleFirst(key){
+  if(!dataPanelKeys.includes(key))return;
+  dataLayout.order=[key,...dataLayout.order.filter(k=>k!==key)];
   saveDataPreferences();applyDataLayout();
 }
 function renderDataLayoutMenu(){
+  renderDataProfiles();
+  var moduleOrder=el("dataModuleOrder"),moduleOptions=dataLayout.order.map(k=>'<option value="'+k+'">'+dataPanelNames[k]+'</option>').join("");
+  if(moduleOrder.innerHTML!==moduleOptions)moduleOrder.innerHTML=moduleOptions;
+  moduleOrder.value=dataLayout.order[0];
   dataPanelKeys.forEach(k=>{
     var input=el("dataVisible"+k);
     input.checked=dataLayout.visible.includes(k);
@@ -1181,22 +1259,89 @@ function dataFaction(f,controlling){
   return '<div class="data-faction'+(isControl?' data-controlling':'')+'"><div class="data-faction-name"><strong>'+dataText(f.name)+'</strong><span class="data-influence">'+dataFmt(f.influence,"%")+'</span></div>'+dataBar(f.influence)+dataStateChips(f)+'<div class="data-faction-meta">'+[isControl?"Controlling faction":"",f.allegiance,f.government].filter(Boolean).map(dataText).join(" · ")+'</div></div>';
 }
 function dataStation(s,detail){
-  var pads=dataObj(s.pads),rows=[["Host body",s.body],["Controlling faction",s.faction],["Allegiance",s.allegiance],["Government",s.government]];
+  var pads=dataObj(s.pads),rows=[["Host body",s.body],["Controlling faction",s.faction],["Faction state",s.factionState],["Allegiance",s.allegiance],["Government",s.government]];
   var padRows=["small","medium","large"].filter(k=>typeof pads[k]==="number").map(k=>[k[0].toUpperCase()+k.slice(1)+" pads",dataFmt(pads[k])]);
   var economies=dataArray(s.economies),palette=["#74d4e6","#cca66b","#a6a1dc","#78bda0","#cf8fa0","#7897c5"];
-  var economy='<h5>ECONOMY COMPOSITION</h5>'+(economies.length?'<div class="data-economy-segments">'+economies.map((e,i)=>'<span style="width:'+Math.max(0,Math.min(100,Number(e.percent)||0))+'%;background:'+palette[i%palette.length]+'"></span>').join("")+'</div>'+economies.map((e,i)=>'<div class="data-economy-row"><span><i class="data-economy-key" style="background:'+palette[i%palette.length]+'"></i>'+dataText(e.name)+'</span><strong>'+dataFmt(e.percent,"%")+'</strong></div>').join(""):dataRows([["Primary economy",s.primaryEconomy],["Exact proportions","Not reported"]]));
+  var max=Math.max(100,...economies.map(e=>Number(e.percent)||0)),scale=Math.ceil(max/100)*100;
+  var economy='<h5>ECONOMY STRENGTHS</h5>'+(economies.length?'<div class="data-sub">Reported values · Independent scale 0–'+scale+'% · Not normalized</div>'+economies.map((e,i)=>'<div class="data-economy-row"><span><i class="data-economy-key" style="background:'+palette[i%palette.length]+'"></i>'+dataText(e.name)+'</span><strong>'+dataFmt(e.percent,"%")+'</strong></div><div class="data-economy-track"><span style="width:'+Math.max(0,Math.min(100,(Number(e.percent)||0)/scale*100))+'%;background:'+palette[i%palette.length]+'"></span></div>').join(""):dataRows([["Primary economy",s.primaryEconomy],["Exact strengths","Not reported"]]));
   var services='<h5>REPORTED SERVICES</h5>'+dataServices(s.services,detail);
-  var overview='<div class="data-hero">'+dataArtwork(s.type,false)+'<div><h4>'+dataText(s.name)+'</h4><div class="data-sub">'+dataText(s.type)+' · Type schematic</div>'+dataMetrics([["Arrival distance",dataFmt(s.distance," Ls")],...padRows])+'</div></div>';
+  var overview='<div class="data-hero">'+dataStationVisual(s.type)+'<div><h4>'+dataText(s.name)+'</h4><div class="data-sub">'+dataText(s.type)+(dataPhoto(s.type)?' · Reference screenshot':' · Type schematic')+'</div>'+dataMetrics([["Arrival distance",dataFmt(s.distance," Ls")],...padRows])+'</div></div>';
   var info=dataRows(rows)+economy;
-  return overview+(detail?'<div class="data-detail-columns"><div class="data-detail-block">'+info+'</div><div class="data-detail-block">'+services+'</div></div>':info+services)+'<div class="data-sub">Spansh report: '+dataText(s.updatedAt)+'</div>';
+  return overview+(detail?dataPhotoControls(s.type):'')+(detail?'<div class="data-detail-columns"><div class="data-detail-block">'+info+'</div><div class="data-detail-block">'+services+'</div></div>':info+services)+'<div class="data-sub">Spansh report: '+dataText(s.updatedAt)+'</div>';
 }
 function dataBody(b){
-  var rings=dataArray(b.rings),signals=Object.entries(dataObj(b.signals));
+  var rings=dataArray(b.rings),signals=Object.entries(dataObj(b.signals)),materials=dataArray(b.materials);
   return '<div class="data-hero">'+dataArtwork(b.type,true,!!rings.length)+'<div><h4>'+dataText(b.name)+'</h4><div class="data-sub">'+dataText(b.type)+(b.landable===true?' · Landable':b.landable===false?' · Not landable':'')+'</div></div></div>'+
     dataMetrics([["Arrival distance",dataFmt(b.distance," Ls")],["Gravity",dataFmt(b.gravity)],["Temperature",dataFmt(b.temperature," K")]])+
     dataRows([["Atmosphere",b.atmosphere],["Volcanism",b.volcanism],["Reserves",b.reserveLevel]])+
     (rings.length?'<h5>RINGS</h5>'+dataRows(rings.map(r=>[String(r.name||"").startsWith(b.name+" ")?r.name.slice(b.name.length+1):r.name,r.type])):"")+
-    (signals.length?'<h5>REPORTED SIGNALS</h5>'+dataMetrics(signals.map(r=>[dataSignalLabel(r[0]),r[1]])):"");
+    (signals.length?'<h5>REPORTED SIGNALS</h5>'+dataMetrics(signals.map(r=>[dataSignalLabel(r[0]),r[1]])):"")+
+    (materials.length?'<h5>RAW MATERIALS · SURFACE ABUNDANCE</h5><div class="data-materials">'+materials.map(m=>'<div class="data-material"><span>'+dataText(m.name)+'</span><strong>'+dataFmt(m.percent,"%")+'</strong></div>').join("")+'</div>':b.landable===true?'<h5>RAW MATERIALS</h5><div class="data-sub">Material percentages not reported.</div>':"")+(b.updatedAt?'<div class="data-sub">Spansh body report: '+dataText(b.updatedAt)+'</div>':"");
+}
+function dataStationMatches(s,filter){
+  var kind=String(s.type||"").toLowerCase(),services=dataArray(s.services).join(" ").toLowerCase();
+  if(filter==="large")return Number(dataObj(s.pads).large)>0;
+  if(filter==="orbital")return /coriolis|orbis|ocellus|dodec|outpost|asteroid/.test(kind)&&!/planetary|surface|crater/.test(kind);
+  if(filter==="surface")return /planetary|surface|settlement|crater|onfoot/.test(kind);
+  if(filter==="carrier")return /carrier/.test(kind);
+  if(filter==="market")return /market|commodit/.test(services);
+  if(filter==="shipyard")return /shipyard/.test(services);
+  if(filter==="repair")return /repair/.test(services);
+  return true;
+}
+function dataSystemTree(report){
+  var bodies=dataArray(report.bodies),stations=dataArray(report.stations),byId=new Map(),children=new Map(),roots=[],seen=new Set();
+  bodies.forEach((b,i)=>{if(typeof b.bodyId==="number"&&!byId.has(b.bodyId))byId.set(b.bodyId,i)});
+  bodies.forEach((b,i)=>{
+    var parent=dataArray(b.parents).find(p=>String(p.kind||"").toLowerCase()!=="null"&&byId.has(p.id)&&byId.get(p.id)!==i);
+    if(parent){var pi=byId.get(parent.id);if(!children.has(pi))children.set(pi,[]);children.get(pi).push(i)}else roots.push(i);
+  });
+  var bodyNames=new Set(bodies.map(b=>b.name));
+  function stationRow(s,i,depth){
+    return '<div class="data-tree-row" style="margin-left:'+Math.min(depth,6)*12+'px"><button class="data-tree-object" type="button" data-object-kind="stations" data-object-index="'+i+'">'+dataArtwork(s.type,false)+'<span>'+dataText(s.name)+'<small>'+dataText(s.type)+'</small></span></button></div>';
+  }
+  function bodyRow(i,depth){
+    if(seen.has(i))return "";seen.add(i);
+    var b=bodies[i],kids=children.get(i)||[],hosted=stations.map((s,j)=>({s,j})).filter(x=>x.s.body===b.name),hasKids=kids.length||hosted.length,closed=dataTreeClosed.has(i);
+    var html='<div class="data-tree-row" style="margin-left:'+Math.min(depth,6)*12+'px">'+(hasKids?'<button class="data-tree-toggle" type="button" data-tree-toggle="'+i+'" aria-label="'+(closed?'Expand':'Collapse')+' orbit branch">'+(closed?'+':'−')+'</button>':'')+'<button class="data-tree-object" type="button" data-object-kind="bodies" data-object-index="'+i+'">'+dataArtwork(b.type,true,!!dataArray(b.rings).length)+'<span>'+dataText(b.name)+'<small>'+dataText(b.type)+(dataArray(b.rings).length?' · '+dataArray(b.rings).length+' rings':'')+'</small></span></button></div>';
+    if(!closed&&depth<32)html+=kids.map(k=>bodyRow(k,depth+1)).join("")+hosted.map(x=>stationRow(x.s,x.j,depth+1)).join("");
+    // Mark hidden descendants so a collapsed branch does not reappear as a root.
+    if(closed){function mark(k){if(seen.has(k))return;seen.add(k);(children.get(k)||[]).forEach(mark)}kids.forEach(mark)}
+    return html;
+  }
+  var html='<div class="data-tree-note">Reported orbital hierarchy · Not to scale · Unresolved parents shown separately</div>'+roots.map(i=>bodyRow(i,0)).join("");
+  bodies.forEach((b,i)=>{if(!seen.has(i))html+=bodyRow(i,0)});
+  var unassigned=stations.map((s,i)=>({s,i})).filter(x=>!bodyNames.has(x.s.body));
+  if(unassigned.length)html+='<div class="data-tree-note">FACILITIES · HOST NOT REPORTED</div>'+unassigned.map(x=>stationRow(x.s,x.i,0)).join("");
+  return html;
+}
+function readDataPhotos(){
+  try{var v=JSON.parse(localStorage.getItem("mongrel-hud-station-photos-v1")||"{}");return v&&typeof v==="object"?v:{}}catch(_){return {}}
+}
+function dataPhotoKey(type){return String(type||"").trim().toLowerCase().slice(0,100)}
+function dataPhoto(type){var photo=dataPhotos[dataPhotoKey(type)];return typeof photo==="string"&&/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(photo)?photo:""}
+function dataStationVisual(type){
+  var photo=dataPhoto(type);
+  return photo?'<img class="data-photo" src="'+photo+'" alt="'+escapeAttr(type||"Facility")+' type reference screenshot">':dataArtwork(type,false);
+}
+function dataPhotoControls(type){
+  return '<div class="data-photo-credit">'+(dataPhoto(type)?"Local type reference screenshot · Elite Dangerous © Frontier Developments":"Type schematic · No verified screenshot loaded")+'</div><div class="data-photo-controls"><button class="data-button" type="button" data-photo-add>ADD TYPE SCREENSHOT</button>'+(dataPhoto(type)?'<button class="data-button" type="button" data-photo-remove>REMOVE PHOTO</button>':"")+'<input id="dataPhotoFile" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Select facility screenshot"></div><div id="dataPhotoNotice" class="data-sub"></div>';
+}
+function storeDataPhoto(key,value){
+  if(value)dataPhotos[key]=value;else delete dataPhotos[key];
+  try{localStorage.setItem("mongrel-hud-station-photos-v1",JSON.stringify(dataPhotos));return true}catch(_){return false}
+}
+function dataPhotoImport(file,detail){
+  if(!file||!detail||detail.kind!=="stations"||!/^image\/(jpeg|png|webp)$/.test(file.type)||file.size>20*1024*1024)return;
+  var key=dataPhotoKey(detail.entry.type);if(!key)return;
+  var reader=new FileReader();
+  reader.onload=function(){var img=new Image();img.onload=function(){
+    var canvas=document.createElement("canvas"),ratio=Math.min(1,1000/Math.max(img.width,img.height));canvas.width=Math.max(1,Math.round(img.width*ratio));canvas.height=Math.max(1,Math.round(img.height*ratio));
+    var ctx=canvas.getContext("2d");ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    var saved=storeDataPhoto(key,canvas.toDataURL("image/jpeg",.78));
+    if(dataDetailObject===detail){dataSet("dataDetail",dataStation(detail.entry,true));setText(el("dataPhotoNotice"),saved?"Saved on this device":"Session only · storage unavailable")}
+    renderDataDisplay();
+  };img.src=reader.result};reader.readAsDataURL(file);
 }
 function dataCurrent(){var sc=dataObj(state&&state.scout),sys=dataObj(sc.system),addr=String(sys.address||"");return {sc:sc,sys:sys,addr:addr,report:dataReport&&String(dataReport.address)===addr?dataObj(dataReport.data):{}}}
 function closeDataDetail(){dataDetailKey="";dataDetailObject=null;el("dataOverlay").classList.add("hidden")}
@@ -1264,12 +1409,13 @@ function renderDataDisplay(){
   var source=dataReport&&String(dataReport.address)===c.addr?dataReport:{};
   setText(el("dataSource"),!(state&&state.connected)?"Scout disconnected · last observation":dataLoading?"Receiving Spansh data…":source.status==="available"?"Spansh · retrieved "+age(new Date(source.fetchedAt*1000).toISOString())+" ago":source.status==="stale"?"Spansh unavailable · cached data":source.status==="unavailable"?"Spansh unavailable":"Awaiting community data");
   dataSet("dataSystem",dataRows([["Population",dataFmt(report.population)],["Controlling faction",report.controllingFaction],["Economy",report.economy],["Power",report.power]])+'<div class="data-sub">Reported '+dataArray(report.stations).length+' stations · '+dataArray(report.bodies).length+' bodies · '+dataArray(report.factions).length+' factions</div>');
-  ["factions","stations","bodies"].forEach(k=>el("data"+k[0].toUpperCase()+k.slice(1)).classList.toggle("active",dataDirectoryMode===k));
-  if(dataFilterAddress!==c.addr){dataFilterAddress=c.addr;dataFilter="";el("dataSearch").value=""}
-  el("dataDirectorySearch").hidden=dataDirectoryMode==="factions";
+  ["factions","stations","bodies","map"].forEach(k=>el("data"+k[0].toUpperCase()+k.slice(1)).classList.toggle("active",dataDirectoryMode===k));
+  if(dataFilterAddress!==c.addr){dataFilterAddress=c.addr;dataFilter="";dataTreeClosed.clear();el("dataSearch").value=""}
+  el("dataDirectorySearch").hidden=dataDirectoryMode==="factions"||dataDirectoryMode==="map";
+  el("dataStationFilter").hidden=dataDirectoryMode!=="stations";
   var directory=dataArray(report[dataDirectoryMode]);
-  var filter=dataFilter.trim().toLowerCase(),visible=directory.map((v,i)=>({v,i})).filter(x=>dataDirectoryMode==="factions"||!filter||[x.v.name,x.v.type,x.v.primaryEconomy,x.v.body,x.v.faction].some(v=>String(v||"").toLowerCase().includes(filter)));
-  dataSet("dataDirectory",visible.length?visible.map(({v,i})=>dataDirectoryMode==="factions"?dataFaction(v,report.controllingFaction):'<button type="button" data-object-kind="'+dataDirectoryMode+'" data-object-index="'+i+'"><span class="data-directory-title"><strong>'+dataText(v.name)+'</strong><small>'+[v.type,v.primaryEconomy].filter(Boolean).map(dataText).join(" · ")+'</small></span><small>'+dataFmt(v.distance," Ls")+' ›</small></button>').join(""):'<div class="data-sub">'+(directory.length?"No matching objects.":"No "+dataDirectoryMode+" reported in the available data.")+'</div>');
+  var filter=dataFilter.trim().toLowerCase(),visible=directory.map((v,i)=>({v,i})).filter(x=>(dataDirectoryMode!=="stations"||dataStationMatches(x.v,dataStationFilter))&&(dataDirectoryMode==="factions"||!filter||[x.v.name,x.v.type,x.v.primaryEconomy,x.v.body,x.v.faction,...dataArray(x.v.services),...dataArray(x.v.economies).map(e=>e.name),...dataArray(x.v.materials).map(m=>m.name)].some(v=>String(v||"").toLowerCase().includes(filter))));
+  dataSet("dataDirectory",dataDirectoryMode==="map"?dataSystemTree(report):visible.length?visible.map(({v,i})=>dataDirectoryMode==="factions"?dataFaction(v,report.controllingFaction):'<button type="button" data-object-kind="'+dataDirectoryMode+'" data-object-index="'+i+'"><span class="data-directory-title"><strong>'+dataText(v.name)+'</strong><small>'+[v.type,v.primaryEconomy].filter(Boolean).map(dataText).join(" · ")+'</small></span><small>'+dataFmt(v.distance," Ls")+' ›</small></button>').join(""):'<div class="data-sub">'+(directory.length?"No matching objects.":"No "+dataDirectoryMode+" reported in the available data.")+'</div>');
   var dname=String(dest.name||""),same=String(dest.systemAddress||"")===c.addr&&!!c.addr&&String(status.systemAddress||"")===c.addr,matchStation=same?dataArray(report.stations).find(s=>s.name.toLowerCase()===dname.toLowerCase()):null,matchBody=same?dataArray(report.bodies).find(b=>b.name.toLowerCase()===dname.toLowerCase()):null;
   var liveBody=same?dataArray(survey.bodies).find(b=>String(b.name||"").toLowerCase()===dname.toLowerCase()):null;
   dataSet("dataTarget",pinned?'<div class="data-pin-bar"><span>PINNED · '+(pinned.cached?"cached selection":source.status==="stale"?"cached report":"directory selection")+' · not in-game target</span><button class="data-button" id="dataUnpin" type="button">FOLLOW TARGET</button></div>'+(pinned.kind==="stations"?dataStation(pinned.entry,false):dataBody(pinned.entry)):!(state&&state.connected)?'<div class="data-sub">Scout disconnected. Target not live.</div>':matchStation?dataStation(matchStation,false):matchBody?dataBody(matchBody):dname?'<h4>'+dataText(dname)+'</h4><div class="data-sub">'+(same?"Local target · detail not reported":"Destination outside current system or scope unavailable")+'</div>'+(liveBody?dataRows([["Body class",liveBody.class||liveBody.planetClass],["Estimated value",dataFmt(liveBody.currentValue," Cr")]]):""):dataIdle("Navigation standby","Select a station or body to view its reported details."));
@@ -1285,6 +1431,10 @@ el("dataLayoutOpen").onclick=openDataLayout;
 el("dataLayoutClose").onclick=closeDataLayout;
 el("dataLayoutDone").onclick=closeDataLayout;
 el("dataLayoutReset").onclick=resetDataLayout;
+el("dataProfileSave").onclick=function(){if(!saveDataProfile(el("dataProfileName").value))setText(el("dataProfileNotice"),"Enter a profile name (up to 24 profiles).")};
+el("dataProfileLoad").onclick=function(){loadDataProfile(el("dataProfileSelect").value)};
+el("dataProfileDelete").onclick=function(){if(!deleteDataProfile(el("dataProfileSelect").value))setText(el("dataProfileNotice"),"Built-in profiles cannot be deleted.")};
+el("dataModuleOrder").onchange=function(){setDataModuleFirst(el("dataModuleOrder").value)};
 el("dataPrimary").onchange=function(){setDataPrimary(el("dataPrimary").value)};
 el("dataLayoutOverlay").onclick=function(e){if(e.target===el("dataLayoutOverlay"))closeDataLayout()};
 el("dataPin").onclick=pinDataTarget;
@@ -1294,11 +1444,14 @@ el("dataRefresh").onclick=function(){refreshDataDisplay(true)};
 el("dataClose").onclick=closeDataDetail;
 el("dataOverlay").onclick=function(e){if(e.target===el("dataOverlay"))closeDataDetail()};
 document.addEventListener("keydown",function(e){if(e.key==="Escape"){if(dataLayoutOpen)closeDataLayout();else if(dataDetailKey)closeDataDetail();else if(dataFocus)setDataFocus("")}});
-["factions","stations","bodies"].forEach(k=>el("data"+k[0].toUpperCase()+k.slice(1)).onclick=function(){dataDirectoryMode=k;dataLayout.directory=k;saveDataPreferences();dataFilter="";el("dataSearch").value="";el("dataDirectory").scrollTop=0;renderDataDisplay()});
+["factions","stations","bodies","map"].forEach(k=>el("data"+k[0].toUpperCase()+k.slice(1)).onclick=function(){dataDirectoryMode=k;dataLayout.directory=k;saveDataPreferences();dataFilter="";el("dataSearch").value="";el("dataDirectory").scrollTop=0;renderDataDisplay()});
 ["auto","ship","explore","route","cargo"].forEach(k=>el("data"+k[0].toUpperCase()+k.slice(1)).onclick=function(){dataOpsMode=k;dataLayout.ops=k;saveDataPreferences();renderDataDisplay()});
 el("dataSearch").oninput=function(){dataFilter=el("dataSearch").value||"";el("dataDirectory").scrollTop=0;renderDataDisplay()};
 el("dataSearchClear").onclick=function(){dataFilter="";el("dataSearch").value="";el("dataDirectory").scrollTop=0;renderDataDisplay()};
-el("dataDirectory").onclick=function(e){var b=e.target.closest("[data-object-kind]");if(b)openDataDetail(b.getAttribute("data-object-kind"),Number(b.getAttribute("data-object-index")))};
+el("dataStationFilter").onchange=function(){dataStationFilter=el("dataStationFilter").value||"all";el("dataDirectory").scrollTop=0;renderDataDisplay()};
+el("dataDirectory").onclick=function(e){var toggle=e.target.closest("[data-tree-toggle]");if(toggle){var i=Number(toggle.getAttribute("data-tree-toggle"));if(dataTreeClosed.has(i))dataTreeClosed.delete(i);else dataTreeClosed.add(i);renderDataDisplay();return}var b=e.target.closest("[data-object-kind]");if(b)openDataDetail(b.getAttribute("data-object-kind"),Number(b.getAttribute("data-object-index")))};
+el("dataDetail").onclick=function(e){if(!dataDetailObject||dataDetailObject.kind!=="stations")return;if(e.target.closest("[data-photo-add]"))el("dataPhotoFile").click();else if(e.target.closest("[data-photo-remove]")){storeDataPhoto(dataPhotoKey(dataDetailObject.entry.type),"");dataSet("dataDetail",dataStation(dataDetailObject.entry,true));renderDataDisplay()}};
+el("dataDetail").addEventListener("change",function(e){if(e.target.id==="dataPhotoFile")dataPhotoImport(e.target.files[0],dataDetailObject)});
 
 function el(id){return document.getElementById(id)}
 function holdRefresh(ms){interactionUntil=Math.max(interactionUntil,Date.now()+(ms||900))}
