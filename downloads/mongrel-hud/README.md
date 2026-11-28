@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.31 — Data Display detail polish
+
+Expand and collapse controls are now 72 × 48 CSS pixels (previously 36 × 32). Preserves the four-quadrant viewport grid. Adds searchable station/body directory with original record indices, faction state colors and controlling-faction accent, distinct Orbis/Ocellus and Coriolis/Dodecahedral schematic illustrations, categorized station services, color-matched economy legend, improved station detail layout, Cargo operations mode with manifest and mission needs, cargo/fuel gauges, and own-ship standby information when no contact is selected. All data remains reported by existing Scout/Spansh sources; artwork is illustrative. Scout unchanged.
+
 ## Mongrel HUD 0.18.30 — Data Display layout refinement
 
 Fixed viewport-height two-by-two layout with independent scroll areas, expand/restore buttons, compact system banner, default faction directory, compact planet metrics and clean signal labels, shortened ring names, rings depicted only when reported, economy composition strip and radar standby graphics. Missing fields are hidden rather than repeated dashes. Existing Spansh/Scout data path unchanged. Actual iPad sizing remains to be verified. Scout unchanged.
