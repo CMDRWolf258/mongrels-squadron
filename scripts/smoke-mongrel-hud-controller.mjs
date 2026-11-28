@@ -60,7 +60,7 @@ function harness() {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,dataBody,dataSignalLabel,setDataFocus,openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -952,6 +952,7 @@ console.log("✓ Ship deck cross layout, ordered rapid taps, no repeat backlog a
   const h=harness();
   h.controller.setState({connected:true,scout:{system:{name:"Test",address:"123"},status:{systemAddress:"123",destination:{name:"Port",systemAddress:"123"}}}});
   h.controller.setDataReport({address:"123",status:"available",fetchedAt:Date.now()/1000,data:{stations:[{name:"Port",type:"Orbis",economies:[{name:"Industrial",percent:65}],services:["Repair"]}],factions:[],bodies:[]}});
+  h.node("dataStations").onclick();
   assert.match(h.node("dataDirectory").innerHTML,/Port/);
   assert.match(h.node("dataTarget").innerHTML,/65%/);
   assert.match(h.node("dataTarget").innerHTML,/Repair/);
@@ -964,3 +965,22 @@ console.log("✓ Ship deck cross layout, ordered rapid taps, no repeat backlog a
   assert.equal(h.node("dataOverlay").classList.contains("hidden"),true);
 }
 console.log("✓ Data display station detail, type artwork and system scope");
+
+{
+  const h=harness();
+  const body={name:"Test 3",type:"High metal content world",distance:123.43,gravity:2.02,temperature:612.99,landable:true,rings:[{name:"Test 3 A Ring",type:"Metallic"}],signals:{"$PlanetaryMiningLocation_Name;":17,"$SAA_SignalType_Geological;":3,"$SAA_SignalType_Human;":5}};
+  const out=h.controller.dataBody(body);
+  assert.match(out,/Mining locations/);assert.match(out,/Geological/);assert.match(out,/Human/);
+  assert.doesNotMatch(out,/\$SAA_|\$Planetary/);
+  assert.match(out,/A Ring/);assert.doesNotMatch(out,/Test 3 A Ring/);
+  assert.match(h.controller.dataArtwork("Planet",true,true),/<ellipse/);
+  assert.doesNotMatch(h.controller.dataArtwork("Planet",true,false),/<ellipse/);
+  h.controller.setDataFocus("Target");
+  assert.equal(h.node("dataGrid").classList.contains("data-expanded"),true);
+  assert.equal(h.node("dataPanelTarget").classList.contains("data-focused"),true);
+  h.controller.setDataFocus("Target");
+  assert.equal(h.node("dataGrid").classList.contains("data-expanded"),false);
+}
+assert.match(html,/grid-template-rows:repeat\(2,minmax\(0,1fr\)\)/);
+assert.match(html,/height:100dvh/);
+console.log("✓ Fixed data viewport, expand controls, compact planet labels and signal localization");
