@@ -10,7 +10,7 @@ assert.ok(inline, 'Controller inline script exists');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const clone = value => JSON.parse(JSON.stringify(value));
 
-function harness() {
+function harness(storage = new Map()) {
   const nodes = new Map();
   function node(id, attrs = {}) {
     if (nodes.has(id)) return nodes.get(id);
@@ -54,13 +54,14 @@ function harness() {
       }, addEventListener() {}, activeElement: null,
     },
     confirm(){return true},
+    localStorage:{getItem(k){return storage.get(k)||null},setItem(k,v){storage.set(k,v)}},
     setTimeout,clearTimeout,
     fetch(path, options) {
       return new Promise(resolve => requests.push({ path, body: options.body === undefined ? null : JSON.parse(options.body), resolve }));
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,dataBody,dataStation,dataFaction,dataOperations,dataSignalLabel,setDataFocus,openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,dataBody,dataStation,dataFaction,dataOperations,dataSignalLabel,setDataFocus,dataPlacements,setDataVisible,setDataPrimary,resetDataLayout,openDataLayout,closeDataLayout,pinDataTarget,clearDataPin,getDataLayout(){return dataLayout},openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -1008,3 +1009,54 @@ console.log("✓ Fixed data viewport, expand controls, compact planet labels and
   h.node("dataSearchClear").onclick();assert.match(h.node("dataDirectory").innerHTML,/Alpha/);
 }
 console.log("✓ Enlarged data controls, station illustrations, categorized services, faction states and filtered directory identity");
+
+{
+  const storage=new Map(),h=harness(storage),c=h.controller;
+  assert.equal(h.node("dataGrid").classList.contains("data-layout-four"),true);
+  h.node("dataHideContact").onclick();
+  assert.equal(h.node("dataPanelContact").classList.contains("data-panel-hidden"),true);
+  assert.equal(h.node("dataGrid").classList.contains("data-layout-three"),true);
+  c.setDataPrimary("Target");
+  assert.equal(h.node("dataPanelTarget").style.gridColumn,"1");
+  assert.equal(h.node("dataPanelTarget").style.gridRow,"1 / span 2");
+  assert.equal(h.node("dataPanelSystem").style.gridColumn,"2");
+  assert.equal(h.node("dataPanelOps").style.gridRow,"2");
+  c.setDataFocus("Ops");
+  assert.equal(h.node("dataGrid").classList.contains("data-expanded"),true);
+  assert.equal(h.node("dataPanelOps").style.gridColumn,"1");
+  c.setDataFocus("Ops");
+  assert.equal(h.node("dataPanelTarget").style.gridRow,"1 / span 2");
+  assert.equal(h.node("dataPanelContact").classList.contains("data-panel-hidden"),true);
+  const restored=harness(storage);
+  assert.equal(restored.node("dataPanelTarget").style.gridRow,"1 / span 2");
+  assert.equal(restored.node("dataPanelContact").classList.contains("data-panel-hidden"),true);
+  c.openDataLayout();
+  h.node("dataVisibleContact").checked=true;h.node("dataVisibleContact").onchange();
+  assert.equal(h.node("dataGrid").classList.contains("data-layout-four"),true);
+  c.setDataVisible("System",false);c.setDataVisible("Contact",false);
+  assert.equal(h.node("dataGrid").classList.contains("data-layout-two"),true);
+  assert.equal(h.node("dataPanelTarget").style.gridColumn,"1");
+  c.setDataVisible("Ops",false);
+  assert.equal(h.node("dataGrid").classList.contains("data-layout-one"),true);
+  assert.equal(c.setDataVisible("Target",false),false);
+  assert.equal(h.node("dataVisibleTarget").disabled,true);
+  c.resetDataLayout();
+  assert.equal(h.node("dataGrid").classList.contains("data-layout-four"),true);
+}
+{
+  const h=harness(),c=h.controller;
+  c.setState({connected:true,scout:{system:{name:"Test",address:"123"},status:{systemAddress:"123",destination:{name:"Beta",systemAddress:"123"}}}});
+  c.setDataReport({address:"123",status:"available",fetchedAt:Date.now()/1000,data:{stations:[{name:"Alpha",type:"Orbis"},{name:"Beta",type:"Coriolis"}],factions:[],bodies:[]}});
+  c.setDataVisible("Target",false);
+  c.openDataDetail("stations",0);c.pinDataTarget();
+  assert.match(h.node("dataTarget").innerHTML,/PINNED/);
+  assert.match(h.node("dataTarget").innerHTML,/Alpha/);
+  assert.equal(h.node("dataPanelTarget").classList.contains("data-panel-hidden"),false);
+  c.clearDataPin();
+  assert.match(h.node("dataTarget").innerHTML,/Beta/);
+  c.openDataDetail("stations",0);c.pinDataTarget();
+  c.setState({connected:true,scout:{system:{name:"Other",address:"456"},status:{systemAddress:"456"}}});
+  c.renderDataDisplay();
+  assert.doesNotMatch(h.node("dataTarget").innerHTML,/PINNED|Alpha/);
+}
+console.log("✓ Data Display persistent layouts, primary selection, focus restore, last-panel guard and scoped target pin");
