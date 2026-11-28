@@ -1235,7 +1235,7 @@ try:
 except ValueError:
     pass
 assert hud.raven_completed_designs([{"buildName":"Mine","buildType":"ourea","complete":True,"systemName":"Test","marketId":1001}],"Test","123",legacy=True)[0]["buildType"]=="ourea"
-with mock.patch.object(hud,"sourcing_verified_read",return_value=json.dumps(raven_sys).encode()) as lookup:
+with mock.patch.object(hud,"sourcing_verified_read",return_value=hud.json.dumps(raven_sys).encode()) as lookup:
     out=hud.enrich_display_raven(report,"Test","123")
     assert out["ravenDesigns"]["matched"]==3
     assert lookup.call_args.args[0].full_url=="https://ravencolonial.net/api/v2/system/123"
