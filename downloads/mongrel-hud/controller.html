@@ -184,6 +184,44 @@ main.deck-wide .controller-tabs button{min-height:44px;font-size:.82rem;padding:
 @media(min-width:1050px){.deck-flight .deck-grid,.deck-systems .deck-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.deck-key{min-height:70px}}
 @media(max-width:760px){.deck-nav-layout{grid-template-columns:minmax(88px,.7fr) minmax(0,2fr);grid-template-areas:"throttle ui" "flight flight" "systems systems";grid-template-rows:auto}.deck-flight .deck-grid,.deck-systems .deck-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:420px){main.deck-wide{padding:9px}.deck-group{padding:6px}.deck-key{font-size:.75rem}.deck-toolbar h2{font-size:.8rem}.deck-tools button{padding:5px;font-size:.7rem}.deck-secondary-layout{grid-template-columns:1fr}}
+
+/* Passive ship data display: independent from overlay and input profiles. */
+.controller-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}
+#dataTab{color:#d2e8ef}
+.data-banner{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border:1px solid #345766;border-radius:9px;background:linear-gradient(120deg,#142d3c,#091922);margin-bottom:9px}
+.data-banner h2{font-size:clamp(1.05rem,2.2vw,1.5rem);margin:3px 0;overflow-wrap:anywhere}
+.data-kicker,.data-panel h3{font-size:.72rem;letter-spacing:.12em;color:#84ddef;font-weight:850;margin:0}
+.data-sub{font-size:.74rem;color:#9bb2be;line-height:1.35}
+.data-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+.data-panel{min-width:0;border:1px solid #345363;border-radius:10px;background:linear-gradient(135deg,#102532,#0a1721);padding:12px;min-height:235px;overflow:hidden}
+.data-panel h3{margin:0 0 10px;padding-bottom:8px;border-bottom:1px solid #2a4856}
+.data-panel h4{font-size:.95rem;color:#e4f6fc;margin:6px 0}
+.data-panel h5{font-size:.72rem;letter-spacing:.08em;color:#91cbd9;margin:12px 0 5px}
+.data-rows{display:grid;gap:3px}
+.data-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:.82rem;padding:4px 0;border-bottom:1px solid #29424c77}
+.data-row>span:first-child{color:#9db6c2}.data-row>strong{text-align:right;overflow-wrap:anywhere}
+.data-bar{height:5px;background:#243d49;border-radius:4px;overflow:hidden;margin:4px 0 7px}.data-bar>span{display:block;background:linear-gradient(90deg,#4185b0,#83e5f0);height:100%}
+.data-list{max-height:190px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.data-list button,.data-button{display:flex;align-items:center;justify-content:space-between;gap:5px;width:100%;min-height:44px;background:#102b38;color:#d4edf6;border:1px solid #365765;border-radius:7px;margin:3px 0;padding:6px 9px;font-size:.8rem;text-align:left}
+.data-button{width:auto;white-space:nowrap}
+.data-list button small{color:#98b5c0;text-align:right;font-size:.68rem}
+.data-section-tabs{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0}
+.data-section-tabs button{flex:1;min-height:36px;border:1px solid #345665;background:#102631;color:#abc8d3;border-radius:6px;font-size:.72rem;font-weight:800;padding:5px}
+.data-section-tabs button.active{background:#215363;color:#c5f5ff;border-color:#7cdaec}
+.data-hero{display:flex;gap:12px;align-items:center;min-width:0}
+.data-hero>svg{width:43%;max-width:180px;flex-shrink:0}
+.data-hero>div{min-width:0;overflow-wrap:anywhere}
+.data-chips{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0}
+.data-chip{border:1px solid #356170;background:#102f39;color:#a9dbe4;font-size:.7rem;border-radius:5px;padding:4px 7px}
+.data-overlay{position:fixed;inset:0;z-index:80;background:#02090dde;display:flex;align-items:center;justify-content:center;padding:16px}
+.data-detail{max-width:690px;width:100%;max-height:88vh;overflow:auto;background:#0b202c;border:1px solid #65acbf;border-radius:13px;padding:18px;box-shadow:0 16px 60px #0009}
+.data-detail-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.data-detail h2{margin:0;font-size:1.13rem}.data-detail .data-hero>svg{max-width:250px}
+.data-detail .data-hero{padding:12px 0}
+.data-detail .data-row{font-size:.94rem}
+.data-status{font-size:.74rem;color:#a2b9c4;text-align:right}
+@media(min-width:900px){.data-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.data-panel{min-height:255px}.data-list{max-height:200px}}
+@media(max-width:620px){.data-grid{grid-template-columns:1fr}.controller-tabs button{font-size:.67rem;overflow-wrap:anywhere}.data-banner{align-items:flex-start}.data-status{max-width:35%}}
 </style>
 </head>
 <body>
@@ -192,8 +230,19 @@ main.deck-wide .controller-tabs button{min-height:44px;font-size:.82rem;padding:
 </div>
 <main id="controllerMain">
   <div class="top"><div class="brand">MONGREL HUD</div><div class="status" id="connection">Connecting…</div></div>
-  <div class="controller-tabs"><button type="button" id="hudTabButton" class="active">HUD CONTROL</button><button type="button" id="carrierTabButton">CARRIER PA</button><button type="button" id="deckTabButton">CONTROL PANEL</button></div>
+  <div class="controller-tabs"><button type="button" id="hudTabButton" class="active">HUD CONTROL</button><button type="button" id="carrierTabButton">CARRIER PA</button><button type="button" id="deckTabButton">CONTROL PANEL</button><button type="button" id="dataTabButton">DATA DISPLAY</button></div>
 
+  <section id="dataTab" class="hidden">
+    <div class="data-banner"><div><div class="data-kicker">MONGREL // SYSTEM INTELLIGENCE</div><h2 id="dataSystemName">Awaiting telemetry</h2><div id="dataSystemMeta" class="data-sub"></div></div><div><div class="data-status" id="dataSource">Waiting for Scout</div><button class="data-button" id="dataRefresh" type="button">REFRESH DATA</button></div></div>
+    <div class="data-grid">
+      <section class="data-panel"><h3>01 / SYSTEM DIRECTORY</h3><div id="dataSystem"></div><div class="data-section-tabs"><button id="dataFactions" type="button">FACTIONS</button><button id="dataStations" type="button">STATIONS</button><button id="dataBodies" type="button">BODIES</button></div><div id="dataDirectory" class="data-list"></div></section>
+      <section class="data-panel"><h3>02 / NAVIGATION TARGET</h3><div id="dataTarget"></div></section>
+      <section class="data-panel"><h3>03 / SHIP CONTACT</h3><div id="dataContact"></div></section>
+      <section class="data-panel"><h3>04 / OPERATIONS</h3><div class="data-section-tabs"><button id="dataAuto" type="button">AUTO</button><button id="dataShip" type="button">SHIP</button><button id="dataExplore" type="button">EXPLORATION</button><button id="dataRoute" type="button">ROUTE</button></div><div id="dataOps"></div></section>
+    </div>
+    <div class="data-sub">Read-only display · Community data queried only while this tab is open · Report timestamps may be older than retrieval time</div>
+  </section>
+  <div id="dataOverlay" class="data-overlay hidden" role="dialog" aria-modal="true" aria-label="Directory detail"><div class="data-detail"><div class="data-detail-head"><div class="data-kicker">MONGREL // OBJECT INTELLIGENCE</div><button id="dataClose" class="data-button" type="button">CLOSE</button></div><div id="dataDetail"></div></div></div>
   <section id="deckTab" class="hidden">
     <div class="card"><div class="deck-toolbar"><h2>SHIP CONTROL PANEL</h2><div class="deck-tools"><button type="button" id="deckSync">SYNC BINDINGS</button><button type="button" id="deckEdit">EDIT MAPPINGS</button></div></div>
       <p class="layout-hint" id="deckSource">Read keyboard bindings from the active Elite presets.</p>
@@ -679,10 +728,12 @@ var flaggedDepositToReview=null;
  var savedDepositScope="",savedDepositOpen=Object.create(null);
 function showControllerTab(name){
   deckCancelInputs();
-  controllerTab=["carrier","deck"].includes(name)?name:"hud";
-  ["hud","carrier","deck"].forEach(function(tab){el(tab+"Tab").classList.toggle("hidden",controllerTab!==tab);el(tab+"TabButton").classList.toggle("active",controllerTab===tab)});
-  el("controllerMain").classList.toggle("deck-wide",controllerTab==="deck");
+  controllerTab=["carrier","deck","data"].includes(name)?name:"hud";
+  if(controllerTab!=="data")closeDataDetail();
+  ["hud","carrier","deck","data"].forEach(function(tab){el(tab+"Tab").classList.toggle("hidden",controllerTab!==tab);el(tab+"TabButton").classList.toggle("active",controllerTab===tab)});
+  el("controllerMain").classList.toggle("deck-wide",controllerTab==="deck"||controllerTab==="data");
   if(controllerTab==="deck")readDeck();
+  if(controllerTab==="data"){renderDataDisplay();refreshDataDisplay(false)}
 }
 var deckProfile="Navigation",deckActions=[],deckEditing=false,deckBusy=false,deckSending=false,deckQueue=[],deckHold=null;
 var deckRepeatIds=new Set(["UI_Up","UI_Down","UI_Left","UI_Right","CyclePreviousPanel","CycleNextPanel"]);
@@ -831,6 +882,86 @@ el("deckControls").onclick=async function(e){
   }catch(err){deckMessage("Mapping failed · "+err.message)}
   finally{deckBusy=false}
 };
+
+var dataReport=null,dataLoading=false,dataLastAttempt=0,dataRequestedAddress="",dataDirectoryMode="stations",dataOpsMode="auto",dataDetailKey="";
+function dataObj(v){return v&&typeof v==="object"?v:{}}
+function dataArray(v){return Array.isArray(v)?v:[]}
+function dataFmt(v,suffix){return typeof v==="number"&&Number.isFinite(v)?v.toLocaleString(undefined,{maximumFractionDigits:2})+(suffix||""):"—"}
+function dataText(v){return v===null||v===undefined||v===""?"—":escapeHtml(String(v))}
+function dataRows(rows){return '<div class="data-rows">'+rows.map(function(r){return '<div class="data-row"><span>'+escapeHtml(r[0])+'</span><strong>'+dataText(r[1])+'</strong></div>'}).join("")+'</div>'}
+function dataBar(v){return typeof v==="number"&&Number.isFinite(v)?'<div class="data-bar"><span style="width:'+Math.max(0,Math.min(100,v))+'%"></span></div>':""}
+function dataChips(v){return '<div class="data-chips">'+dataArray(v).map(function(x){return '<span class="data-chip">'+dataText(x)+'</span>'}).join("")+'</div>'}
+function dataSet(id,html){var n=el(id);if(n.innerHTML!==html){var scroll=n.scrollTop;n.innerHTML=html;n.scrollTop=scroll||0}}
+function dataArtwork(type,body){
+  var t=String(type||"").toLowerCase(),shape="",label="Station type unclassified";
+  if(body){label="Planetary body schematic";shape='<circle cx="130" cy="75" r="48" fill="#173a4b"/><path d="M89 52Q135 65 172 48 M83 80Q130 100 176 76 M100 109Q130 117 159 109" stroke="#75bbc9" fill="none"/><ellipse cx="130" cy="75" rx="88" ry="13" transform="rotate(-22 130 75)" stroke="#678a9b" fill="none"/>'}
+  else if(/coriolis|dodec/.test(t)){label=/dodec/.test(t)?"Dodecahedral station schematic":"Coriolis station schematic";shape='<path d="M130 17L183 46 190 97 130 132 70 97 77 46Z" fill="#173b4c"/><path d="M130 17L130 56 77 46 M130 56L183 46 M130 56L130 132 M70 97L130 56 190 97" fill="none"/><path d="M109 64L151 64 151 83 109 83Z" fill="#0b1921" stroke="#b8eaf4"/>'}
+  else if(/orbis|ocellus/.test(t)){label=/ocellus/.test(t)?"Ocellus station schematic":"Orbis station schematic";shape='<ellipse cx="106" cy="74" rx="50" ry="55" fill="#102b3a"/><ellipse cx="106" cy="74" rx="36" ry="41" fill="#0a1b25"/><path d="M35 66H218V82H35Z" fill="#204a59"/><path d="M106 19V129 M56 74H156 M70 36L141 112 M70 112L141 36" fill="none"/><ellipse cx="182" cy="74" rx="20" ry="28" fill="#183b4c"/>'}
+  else if(/carrier|megaship/.test(t)){label="Carrier / megaship schematic";shape='<path d="M27 65L66 45 182 45 231 66 231 86 182 105 66 105 27 86Z" fill="#224654"/><rect x="76" y="52" width="91" height="46" rx="3" fill="#112a36"/><path d="M82 64H158 M82 77H158 M82 89H158 M42 55V97 M207 55V97" fill="none"/>'}
+  else if(/planetary|settlement|surface|onfoot|crater/.test(t)){label="Surface facility schematic";shape='<path d="M15 120L55 110 95 119 136 106 187 117 245 106" fill="none"/><path d="M42 91V59H83V91 M99 91V35H143V91 M160 91V68H213V91" fill="#244857"/><path d="M30 94H230V106H30Z" fill="#143442"/><circle cx="183" cy="47" r="13" fill="#183b4c"/>'}
+  else if(/outpost|installation|asteroid|construction/.test(t)){label="Outpost / installation schematic";shape='<path d="M60 60H194V91H60Z M92 40H158V111H92Z" fill="#204655"/><path d="M25 50H70V100H25Z M185 50H235V100H185Z" fill="#143442"/><path d="M33 62H61 M33 76H61 M33 90H61 M194 62H227 M194 76H227 M194 90H227" fill="none"/>'}
+  else{shape='<path d="M90 54L130 32 170 54 170 95 130 117 90 95Z" fill="#153645"/><circle cx="130" cy="74" r="15" fill="none"/>'}
+  return '<svg viewBox="0 0 260 150" role="img" aria-label="'+label+'" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="258" height="148" rx="9" fill="#091c29" stroke="#2b5264"/><g stroke="#294653" fill="none" stroke-width=".7"><circle cx="130" cy="75" r="66"/><path d="M12 75H248M130 8V142" stroke-dasharray="3 5"/></g><g stroke="#85d2e4" stroke-width="1.7" stroke-linejoin="round">'+shape+'</g></svg>';
+}
+function dataStation(s,detail){
+  var pads=dataObj(s.pads),rows=[["Type",s.type],["Distance",dataFmt(s.distance," Ls")],["Host body",s.body],["Controlling faction",s.faction],["Allegiance",s.allegiance],["Government",s.government]];
+  if(Object.values(pads).some(v=>typeof v==="number"))rows.push(["Landing pads",["small","medium","large"].map(k=>k[0].toUpperCase()+": "+dataFmt(pads[k])).join(" · ")]);
+  var economies=dataArray(s.economies);
+  return '<div class="data-hero">'+dataArtwork(s.type,false)+'<div><h4>'+dataText(s.name)+'</h4><div class="data-sub">'+dataText(s.type)+' · Type schematic</div></div></div>'+dataRows(rows)+'<h5>ECONOMY COMPOSITION</h5>'+(economies.length?economies.map(e=>dataRows([[e.name,dataFmt(e.percent,"%")]])+dataBar(e.percent)).join(""):dataRows([["Primary economy",s.primaryEconomy],["Exact proportions","Not reported"]]))+'<h5>REPORTED SERVICES</h5>'+(dataArray(s.services).length?dataChips(s.services):'<div class="data-sub">Service list not reported.</div>')+'<div class="data-sub">Spansh report: '+dataText(s.updatedAt)+'</div>';
+}
+function dataBody(b){
+  return '<div class="data-hero">'+dataArtwork(b.type,true)+'<div><h4>'+dataText(b.name)+'</h4><div class="data-sub">'+dataText(b.type)+'</div></div></div>'+dataRows([["Distance",dataFmt(b.distance," Ls")],["Landable",b.landable===true?"Yes":b.landable===false?"No":"—"],["Surface gravity",dataFmt(b.gravity)],["Temperature",dataFmt(b.temperature," K")],["Atmosphere",b.atmosphere],["Volcanism",b.volcanism],["Reserves",b.reserveLevel]])+(dataArray(b.rings).length?'<h5>RINGS</h5>'+dataRows(b.rings.map(r=>[r.name,r.type])):"")+(Object.keys(dataObj(b.signals)).length?'<h5>REPORTED SIGNALS</h5>'+dataRows(Object.entries(b.signals)):"");
+}
+function dataCurrent(){var sc=dataObj(state&&state.scout),sys=dataObj(sc.system),addr=String(sys.address||"");return {sc:sc,sys:sys,addr:addr,report:dataReport&&String(dataReport.address)===addr?dataObj(dataReport.data):{}}}
+function closeDataDetail(){dataDetailKey="";el("dataOverlay").classList.add("hidden")}
+function openDataDetail(kind,index){
+  var c=dataCurrent(),entry=dataArray(c.report[kind])[index];
+  if(!entry)return;
+  dataDetailKey=c.addr;
+  dataSet("dataDetail",kind==="stations"?dataStation(entry,true):dataBody(entry));
+  el("dataOverlay").classList.remove("hidden");
+}
+async function refreshDataDisplay(force){
+  if(controllerTab!=="data"||dataLoading||!(state&&state.connected))return;
+  var c=dataCurrent();if(!c.addr)return;
+  var now=Date.now();
+  if(!force&&c.addr===dataRequestedAddress&&now-dataLastAttempt<300000)return;
+  if(force&&c.addr===dataRequestedAddress&&now-dataLastAttempt<30000)return;
+  dataRequestedAddress=c.addr;dataLastAttempt=now;dataLoading=true;
+  try{var r=await api("/api/data-display"+(force?"?refresh=1":""));if(String(r.address)===dataCurrent().addr)dataReport=r}
+  catch(e){if(dataCurrent().addr===c.addr){var old=dataReport&&String(dataReport.address)===c.addr?dataReport:{};dataReport=Object.assign({},old,{address:c.addr,status:old.data?"stale":"unavailable"})}}
+  finally{dataLoading=false;if(controllerTab==="data")renderDataDisplay()}
+}
+function renderDataDisplay(){
+  if(controllerTab!=="data")return;
+  var c=dataCurrent(),sc=c.sc,sys=c.sys,report=c.report,status=dataObj(sc.status),ship=dataObj(sc.ship),target=dataObj(sc.target),dest=dataObj(status.destination),survey=dataObj(sc.exploration),nav=dataObj(sc.navigation);
+  if(dataDetailKey&&dataDetailKey!==c.addr)closeDataDetail();
+  setText(el("dataSystemName"),sys.name||"Awaiting telemetry");
+  setText(el("dataSystemMeta"),[report.security,report.allegiance,report.government].filter(Boolean).join(" · ")||"Live location via Scout");
+  var source=dataReport&&String(dataReport.address)===c.addr?dataReport:{};
+  setText(el("dataSource"),!(state&&state.connected)?"Scout disconnected · last observation":dataLoading?"Receiving Spansh data…":source.status==="available"?"Spansh · retrieved "+age(new Date(source.fetchedAt*1000).toISOString())+" ago":source.status==="stale"?"Spansh unavailable · cached data":source.status==="unavailable"?"Spansh unavailable":"Awaiting community data");
+  dataSet("dataSystem",dataRows([["Population",dataFmt(report.population)],["Controlling faction",report.controllingFaction],["Economy",report.economy],["Power",report.power]])+'<div class="data-sub">Reported '+dataArray(report.stations).length+' stations · '+dataArray(report.bodies).length+' bodies · '+dataArray(report.factions).length+' factions</div>');
+  ["factions","stations","bodies"].forEach(k=>el("data"+k[0].toUpperCase()+k.slice(1)).classList.toggle("active",dataDirectoryMode===k));
+  var directory=dataArray(report[dataDirectoryMode]);
+  dataSet("dataDirectory",directory.length?directory.map((v,i)=>dataDirectoryMode==="factions"?'<div>'+dataRows([[v.name,dataFmt(v.influence,"%")]])+dataBar(v.influence)+dataChips(v.states.length?v.states:v.state?[v.state]:[])+'</div>':'<button type="button" data-object-kind="'+dataDirectoryMode+'" data-object-index="'+i+'"><span>'+dataText(v.name)+'</span><small>'+dataText(v.type)+'<br>'+dataFmt(v.distance," Ls")+'</small></button>').join(""):'<div class="data-sub">No '+dataDirectoryMode+' reported in the available data.</div>');
+  var dname=String(dest.name||""),same=String(dest.systemAddress||"")===c.addr&&!!c.addr&&String(status.systemAddress||"")===c.addr,matchStation=same?dataArray(report.stations).find(s=>s.name.toLowerCase()===dname.toLowerCase()):null,matchBody=same?dataArray(report.bodies).find(b=>b.name.toLowerCase()===dname.toLowerCase()):null;
+  var liveBody=same?dataArray(survey.bodies).find(b=>String(b.name||"").toLowerCase()===dname.toLowerCase()):null;
+  dataSet("dataTarget",!(state&&state.connected)?'<div class="data-sub">Scout disconnected. Target not live.</div>':matchStation?dataStation(matchStation,false):matchBody?dataBody(matchBody):dname?'<h4>'+dataText(dname)+'</h4><div class="data-sub">'+(same?"Local target · detail not reported":"Destination outside current system or scope unavailable")+'</div>'+(liveBody?dataRows([["Body class",liveBody.class||liveBody.planetClass],["Estimated value",dataFmt(liveBody.currentValue," Cr")]]):""):'<div class="data-sub">No navigation target selected.</div>');
+  dataSet("dataContact",state&&state.connected&&target.locked?'<h4>'+dataText(target.ship)+'</h4><div class="data-sub">'+dataText(target.pilotName)+'</div>'+dataRows([["Rank",target.pilotRank],["Faction",target.faction],["Legal status",target.legalStatus],["Bounty",dataFmt(target.bounty," Cr")],["Hull",dataFmt(target.hullHealth,"%")]])+dataBar(target.hullHealth)+dataRows([["Shields",dataFmt(target.shieldHealth,"%")]])+dataBar(target.shieldHealth)+dataRows([["Subsystem",dataObj(target.subsystem).name],["Scan stage",target.scanStage]])+'<div class="data-sub">Journal scan · '+dataText(target.timestamp)+'</div>':'<div class="data-sub">No live ship contact. Target a ship to populate scan information.</div>');
+  ["auto","ship","explore","route"].forEach(k=>el("data"+k[0].toUpperCase()+k.slice(1)).classList.toggle("active",dataOpsMode===k));
+  var mode=dataOpsMode==="auto"?(nav.active?"route":(state&&state.profile)==="exploration"?"explore":"ship"):dataOpsMode;
+  dataSet("dataOps",mode==="route"?'<h4>ROUTE STATUS</h4>'+dataRows([["Destination",nav.destination],["Next system",nav.nextSystem],["Route",nav.active?"Active":nav.completed?"Complete":"Standby"]]):mode==="explore"?'<h4>EXPLORATION</h4>'+dataRows([["Known bodies",survey.knownBodies],["Personally scanned",survey.personallyScannedBodies],["Mapped",survey.personallyMappedBodies],["Estimated cartographic value",dataFmt(survey.currentSystemEstimate," Cr")],["Estimated completed biology",dataFmt(dataObj(survey.exobiology).currentSystemCompletedEstimate," Cr")]]):'<h4>'+dataText(ship.name||ship.type||"Ship telemetry")+'</h4>'+dataRows([["Ship type",ship.type],["Cargo",dataFmt(status.cargo," t")+" / "+dataFmt(ship.cargoCapacity," t")]])+dataBar(typeof status.cargo==="number"&&ship.cargoCapacity>0?status.cargo/ship.cargoCapacity*100:null)+dataRows([["Fuel",dataFmt(status.fuelMain," t")+" / "+dataFmt(ship.fuelCapacity," t")],["Hull",dataFmt(ship.hullHealth,"%")],["Jump range",dataFmt(ship.maxJumpRange," Ly")],["Legal state",status.legalState]])+'<div class="data-sub">Latest Scout telemetry · '+dataText(sc.updatedAt)+'</div>');
+  refreshDataDisplay(false);
+}
+el("dataTabButton").onclick=function(){showControllerTab("data")};
+el("dataRefresh").onclick=function(){refreshDataDisplay(true)};
+el("dataClose").onclick=closeDataDetail;
+el("dataOverlay").onclick=function(e){if(e.target===el("dataOverlay"))closeDataDetail()};
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&dataDetailKey)closeDataDetail()});
+["factions","stations","bodies"].forEach(k=>el("data"+k[0].toUpperCase()+k.slice(1)).onclick=function(){dataDirectoryMode=k;renderDataDisplay()});
+["auto","ship","explore","route"].forEach(k=>el("data"+k[0].toUpperCase()+k.slice(1)).onclick=function(){dataOpsMode=k;renderDataDisplay()});
+el("dataDirectory").onclick=function(e){var b=e.target.closest("[data-object-kind]");if(b)openDataDetail(b.getAttribute("data-object-kind"),Number(b.getAttribute("data-object-index")))};
+
 function el(id){return document.getElementById(id)}
 function holdRefresh(ms){interactionUntil=Math.max(interactionUntil,Date.now()+(ms||900))}
 function setText(node,value){if(node&&node.textContent!==value)node.textContent=value}
@@ -1520,6 +1651,7 @@ el("sourcingResults").onclick=async function(e){
 
 function render(){
   if(!state)return;
+  renderDataDisplay();
   renderRavenCart();
   renderSourcingControls();
   renderRouteControls();

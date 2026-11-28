@@ -55,7 +55,7 @@ except Exception:
     Zeroconf = None
     MDNS_AVAILABLE = False
 
-APP_VERSION = "0.18.28"
+APP_VERSION = "0.18.29"
 SCOUT_STATE_URL = "http://127.0.0.1:43857/v1/state"
 SCOUT_EVENTS_URL = "http://127.0.0.1:43857/v1/events"
 SCOUT_ALERT_ACK_URL = "http://127.0.0.1:43857/v1/site-feed/ack"
@@ -1848,6 +1848,131 @@ def sourcing_verified_read(req):
             return response.read(8 * 1024 * 1024 + 1)
 
 
+def display_text(value, limit=160):
+    return value.strip()[:limit] if isinstance(value, str) else ""
+
+
+def display_number(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return value if -1e16 < value < 1e16 else None
+
+
+def display_economies(value):
+    """Use reported composition, not inferred primary/secondary percentages."""
+    rows = []
+    if isinstance(value, dict):
+        value = [{"name": k, "proportion": v} for k, v in value.items()]
+    if not isinstance(value, list):
+        return rows
+    for item in value[:30]:
+        if not isinstance(item, dict):
+            continue
+        name = display_text(item.get("name") or item.get("Name_Localised") or item.get("Name"))
+        amount = display_number(item.get("proportion", item.get("Proportion", item.get("percentage"))))
+        if name and amount is not None and amount >= 0:
+            rows.append({"name": name, "percent": amount})
+    total = sum(row["percent"] for row in rows)
+    if 0.98 <= total <= 1.02:
+        for row in rows:
+            row["percent"] = round(row["percent"] * 100, 2)
+    elif not 98 <= total <= 102:
+        # A partial/unknown denominator is not a valid economy breakdown.
+        return []
+    return sorted(rows, key=lambda row: -row["percent"])
+
+
+def display_system_dump(payload, name, address):
+    system = payload.get("system", payload) if isinstance(payload, dict) else {}
+    if not isinstance(system, dict) or str(system.get("id64")) != address or display_text(system.get("name")).casefold() != name.casefold():
+        raise ValueError("system_identity_mismatch")
+    def label(v):
+        return display_text(v.get("name")) if isinstance(v, dict) else display_text(v)
+    def strings(v):
+        return [label(x) for x in v[:120] if label(x)] if isinstance(v, list) else []
+    stations = {}
+    def add_station(s, body=""):
+        if not isinstance(s, dict):
+            return
+        n = display_text(s.get("name"))
+        if not n:
+            return
+        mid = str(s.get("marketId") or s.get("id") or "")
+        key = mid if mid.isdecimal() else n.casefold()
+        pads = s.get("landingPads")
+        pads = {k: display_number(pads.get(k)) for k in ("small", "medium", "large")} if isinstance(pads, dict) else {}
+        row = {"name": n, "type": display_text(s.get("type")), "body": body,
+               "distance": display_number(s.get("distanceToArrival")),
+               "faction": label(s.get("controllingFaction")), "allegiance": label(s.get("allegiance")),
+               "government": label(s.get("government")), "primaryEconomy": label(s.get("primaryEconomy") or s.get("economy")),
+               "economies": display_economies(s.get("economies")), "services": strings(s.get("services")),
+               "pads": pads, "updatedAt": display_text(s.get("updateTime") or s.get("updatedAt"))}
+        old = stations.get(key)
+        if old:
+            # Nested body record can add host identity to a top-level station.
+            if body and not old["body"]:
+                old["body"] = body
+            for k,v in row.items():
+                if v is not None and v != "" and v != [] and v != {} and not old.get(k):
+                    old[k] = v
+        elif len(stations) < 500:
+            stations[key] = row
+    for s in system.get("stations") or []:
+        add_station(s)
+    bodies = []
+    for b in (system.get("bodies") or [])[:500]:
+        if not isinstance(b, dict):
+            continue
+        bn = display_text(b.get("name"))
+        if not bn:
+            continue
+        rings = [{"name": display_text(r.get("name")), "type": display_text(r.get("type"))}
+                 for r in (b.get("rings") or [])[:40] if isinstance(r, dict)]
+        signals = b.get("signals")
+        counts = signals.get("signals") if isinstance(signals, dict) else {}
+        bodies.append({"name": bn, "bodyId": display_number(b.get("bodyId")),
+                       "type": display_text(b.get("subType") or b.get("type")),
+                       "distance": display_number(b.get("distanceToArrival")), "gravity": display_number(b.get("gravity")),
+                       "temperature": display_number(b.get("surfaceTemperature")),
+                       "atmosphere": display_text(b.get("atmosphereType")), "volcanism": display_text(b.get("volcanismType")),
+                       "landable": b.get("isLandable") if isinstance(b.get("isLandable"), bool) else None,
+                       "rings": rings, "reserveLevel": display_text(b.get("reserveLevel")),
+                       "signals": {display_text(k): v for k,v in counts.items() if display_number(v) is not None} if isinstance(counts, dict) else {}})
+        for s in b.get("stations") or []:
+            add_station(s, bn)
+    factions = []
+    for f in (system.get("factions") or [])[:100]:
+        if not isinstance(f, dict) or not display_text(f.get("name")):
+            continue
+        influence = display_number(f.get("influence"))
+        if influence is not None and 0 <= influence <= 1:
+            influence = round(influence * 100, 2)
+        elif influence is not None and not 0 <= influence <= 100:
+            influence = None
+        factions.append({"name": display_text(f.get("name")), "influence": influence,
+                         "state": label(f.get("state")), "states": strings(f.get("activeStates")),
+                         "allegiance": label(f.get("allegiance")), "government": label(f.get("government"))})
+    return {"name": name, "address": address, "population": display_number(system.get("population")),
+            "security": label(system.get("security")), "allegiance": label(system.get("allegiance")),
+            "government": label(system.get("government")), "controllingFaction": label(system.get("controllingFaction")),
+            "economy": label(system.get("primaryEconomy")), "power": label(system.get("power")),
+            "updatedAt": display_text(system.get("updateTime") or system.get("updatedAt")),
+            "factions": sorted(factions, key=lambda f: -(f["influence"] or 0)),
+            "stations": sorted(stations.values(), key=lambda s: (s["distance"] is None, s["distance"] or 0, s["name"].casefold())),
+            "bodies": bodies}
+
+
+def fetch_display_system(name, address):
+    if not address.isascii() or not address.isdecimal() or len(address)>20:
+        raise ValueError("system_address_unavailable")
+    req = urllib.request.Request("https://spansh.co.uk/api/dump/"+address,
+        headers={"Accept":"application/json", "User-Agent":f"MongrelHUD/{APP_VERSION} (system data display)"})
+    raw = sourcing_verified_read(req)
+    if len(raw)>8*1024*1024:
+        raise ValueError("system_response_too_large")
+    return display_system_dump(json.loads(raw), name, address)
+
+
 def spansh_sourcing_rows(request, key):
     payload = spansh_sourcing_payload(request, key)
     req = urllib.request.Request(SPANSH_STATION_SEARCH,
@@ -2310,6 +2435,8 @@ class MongrelHudApp:
         self.navigation_arrival: dict[str, Any] = {}
         self.deck_lock = threading.Lock()
         self.deck_binding_cache = None
+        self.data_display_lock = threading.Lock()
+        self.data_display_cache = {}
         self.sourcing_lock = threading.RLock()
         self.sourcing_job = {}
         self.sourcing_cache = {}
@@ -6478,6 +6605,37 @@ class MongrelHudApp:
             return None
         return {k: v for k, v in cue.items() if k != "atMonotonic"}
 
+    def data_display(self, force=False):
+        # Only the paired Data Display tab calls this. Never query Spansh
+        # from the regular 1-second controller state polling endpoint.
+        scout = self.scout_state()
+        system = scout.get("system") or {}
+        name = display_text(system.get("name"))
+        address = str(system.get("address") or "")
+        with self.lock:
+            connected = self.snapshot.connected
+        if not connected or not name or not address.isascii() or not address.isdecimal() or len(address)>20:
+            return {"ok": True, "status": "waiting", "address": address, "data": None}
+        with self.data_display_lock:
+            now = time.monotonic()
+            key = (address, name.casefold())
+            record = self.data_display_cache.get(key)
+            if record and now-record["attempt"] < (30 if force else 300):
+                return record["response"]
+            response = {"ok":True, "status":"available", "address":address, "source":"Spansh", "data":None}
+            try:
+                response["data"] = fetch_display_system(name, address)
+                response["fetchedAt"] = time.time()
+            except (OSError, ValueError, RuntimeError) as exc:
+                previous = record["response"] if record else {}
+                response.update(status="stale" if previous.get("data") else "unavailable",
+                                data=previous.get("data"), fetchedAt=previous.get("fetchedAt"),
+                                error="Community system lookup failed")
+            self.data_display_cache[key] = {"attempt":time.monotonic(), "response":response}
+            while len(self.data_display_cache)>12:
+                self.data_display_cache.pop(next(iter(self.data_display_cache)))
+            return response
+
     def controller_state(self) -> dict[str, Any]:
         state = self.scout_state()
         with self.lock:
@@ -9543,6 +9701,12 @@ def make_handler(app: MongrelHudApp):
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)
+                return
+            if path == "/api/data-display":
+                if not self.authorized():
+                    self.send_json({"ok": False, "error": "pair_required"}, 401)
+                    return
+                self.send_json(app.data_display(force=parse_qs(urlparse(self.path).query).get("refresh")==["1"]))
                 return
             if path in {"/api/state", "/api/route", "/api/carrier-saved-route"}:
                 if not self.authorized():

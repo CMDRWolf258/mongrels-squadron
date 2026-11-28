@@ -60,7 +60,7 @@ function harness() {
     },
   };
   vm.createContext(context);
-  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
+  const expose = 'globalThis.testController={setState(v){state=v},getState(){return state},load,render,api,diagnosticText,renderFlightManifest,renderScoutNetwork,renderRavenCart,renderSourcingControls,renderDataDisplay,dataArtwork,openDataDetail,setDataReport(v){dataReport=v;controllerTab="data";dataRequestedAddress=String(v.address);dataLastAttempt=Date.now();renderDataDisplay()},deckEnqueue,deckCancelInputs,deckStartHold,deckStopHold,setDeck(v){controllerTab="deck";deckActions=v;renderDeck()},setDeckProfile(v){deckProfile=v;renderDeck()},setSourcingResult(v){sourcingResult=v},renderSourcingResults,setRavenManualRefresh(v){ravenManualRefresh=v},expireRavenNotice(){ravenManualNoticeUntil=Date.now()-1},renderSurveyorDiscovery,renderSurveyorControls,renderCarrierRoute,restoreSavedCarrierPlan,disableRender(){render=function(){}}};';
   assert.ok(inline.includes('load();setInterval(load,1000);'), 'Initial poll entry point is present');
   vm.runInContext(inline.replace('load();setInterval(load,1000);', expose), context);
   context.testController.disableRender();
@@ -947,3 +947,20 @@ console.log("✓ Quiet background Raven refresh, manual-only feedback and stable
   assert.equal(h.requests.length,1,"pending input discarded on context change");
 }
 console.log("✓ Ship deck cross layout, ordered rapid taps, no repeat backlog and release cancellation");
+
+{
+  const h=harness();
+  h.controller.setState({connected:true,scout:{system:{name:"Test",address:"123"},status:{systemAddress:"123",destination:{name:"Port",systemAddress:"123"}}}});
+  h.controller.setDataReport({address:"123",status:"available",fetchedAt:Date.now()/1000,data:{stations:[{name:"Port",type:"Orbis",economies:[{name:"Industrial",percent:65}],services:["Repair"]}],factions:[],bodies:[]}});
+  assert.match(h.node("dataDirectory").innerHTML,/Port/);
+  assert.match(h.node("dataTarget").innerHTML,/65%/);
+  assert.match(h.node("dataTarget").innerHTML,/Repair/);
+  h.controller.openDataDetail("stations",0);
+  assert.match(h.node("dataDetail").innerHTML,/Orbis station schematic/);
+  assert.notEqual(h.controller.dataArtwork("Orbis"),h.controller.dataArtwork("Coriolis"));
+  h.controller.setState({connected:true,scout:{system:{name:"Other",address:"456"},status:{systemAddress:"456",destination:{name:"Port",systemAddress:"123"}}}});
+  h.controller.renderDataDisplay();
+  assert.doesNotMatch(h.node("dataTarget").innerHTML,/65%/);
+  assert.equal(h.node("dataOverlay").classList.contains("hidden"),true);
+}
+console.log("✓ Data display station detail, type artwork and system scope");
