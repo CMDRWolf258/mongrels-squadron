@@ -1,3 +1,7 @@
+## Mongrel HUD 0.18.38 — Station directory and external navigation targets
+
+Hides temporary construction-site/depot and system colonisation ship records from passive system directories and orbital maps (including nested body stations), without changing construction logistics, market sourcing, or Raven design matching for completed facilities. Navigation Target requests the selected external system's Spansh report separately from the current directory, using Scout destination identity, the existing bounded cache and refresh limits. Displays reported population, primary star, security, allegiance, government, controlling faction, economy, power and body/facility counts. Stale/unavailable data is explicitly labelled; switching destinations cannot display the previous report. Pins and local body/station targets retain existing behavior. Scout unchanged; live iPad and destination telemetry verification required.
+
 ## Mongrel HUD 0.18.37 — Orbital outpost imagery
 
 Restores the orbital outpost photo fallback removed in 0.18.36. Exact Raven design still wins. Reported orbital outpost subtype selects its corresponding reference; otherwise choose a labelled economy-based or general outpost reference, never claim the actual design is known. Unidentified surface sites retain schematics. No Scout changes.

@@ -1089,6 +1089,7 @@ el("deckControls").onclick=async function(e){
 };
 
 var dataReport=null,dataLoading=false,dataLastAttempt=0,dataRequestedAddress="",dataDirectoryMode="factions",dataOpsMode="auto",dataDetailKey="",dataFocus="",dataFilter="",dataFilterAddress="",dataDetailObject=null,dataPinned=null,dataTreeClosed=new Set(),dataStationFilter="all";
+var dataRemoteReport=null,dataRemoteLoading=false,dataRemoteRequestedKey="",dataRemoteLastAttempt=0;
 var dataPanelKeys=["System","Target","Contact","Ops"],dataPanelNames={System:"System Directory",Target:"Navigation Target",Contact:"Ship Contact",Ops:"Operations"},dataLayoutKey="mongrel-hud-data-layout-v1",dataLayoutOpen=false;
 var dataModuleDefaults={System:"directory",Target:"target",Contact:"contact",Ops:"operations"},dataModuleNative={directory:"System",target:"Target",contact:"Contact",operations:"Ops"},dataModuleNames={directory:"System Directory",target:"Navigation Target",contact:"Ship Contact",operations:"Operations",factions:"Faction Intelligence",stations:"Station Directory",bodies:"Body Directory",map:"System Cartography",ship:"Ship Systems",cargo:"Cargo Manifest",explore:"Exploration",route:"Route Director",colonization:"Colonization Logistics",carrier:"Fleet Carrier"},dataModuleSignature="",dataModuleFilters={},dataLayout=readDataPreferences();
 dataDirectoryMode=dataLayout.directory;dataOpsMode=dataLayout.ops;
@@ -1492,6 +1493,45 @@ async function refreshDataDisplay(force){
   catch(e){if(dataCurrent().addr===c.addr){var old=dataReport&&String(dataReport.address)===c.addr?dataReport:{};dataReport=Object.assign({},old,{address:c.addr,status:old.data?"stale":"unavailable"})}}
   finally{dataLoading=false;if(controllerTab==="data")renderDataDisplay()}
 }
+function dataRemoteSelection(){
+  var c=dataCurrent(),dest=dataObj(dataObj(c.sc.status).destination),address=String(dest.systemAddress||""),name=String(dest.name||"").trim();
+  if(!c.addr||!name||!/^\d{1,20}$/.test(address)||/^0+$/.test(address)||address===c.addr)return null;
+  return {address:address,name:name,key:address+"|"+name.toLowerCase()};
+}
+function dataRemoteMatches(r,selection){
+  return !!(r&&selection&&String(r.address)===selection.address&&String(r.name||dataObj(r.data).name||"").toLowerCase()===selection.name.toLowerCase());
+}
+async function refreshDataRemote(force){
+  if(controllerTab!=="data"||dataRemoteLoading||!(state&&state.connected)||dataPinned||!dataLayout.visible.some(k=>dataLayout.modules[k]==="target"))return;
+  var selection=dataRemoteSelection();if(!selection)return;
+  var now=Date.now();
+  if(selection.key===dataRemoteRequestedKey&&now-dataRemoteLastAttempt<(force?30000:300000))return;
+  dataRemoteRequestedKey=selection.key;dataRemoteLastAttempt=now;dataRemoteLoading=true;
+  try{
+    var r=await api("/api/data-display?target=1"+(force?"&refresh=1":"")),current=dataRemoteSelection();
+    if(current&&current.key===selection.key){
+      if(dataRemoteMatches(r,current))dataRemoteReport=r;
+      else if(r.status==="waiting"){dataRemoteReport={address:selection.address,name:selection.name,status:"unavailable",data:null};}
+      else dataRemoteReport={address:selection.address,name:selection.name,status:"unavailable",data:null};
+    }
+  }catch(e){
+    var current=dataRemoteSelection();
+    if(current&&current.key===selection.key){
+      var old=dataRemoteMatches(dataRemoteReport,selection)?dataRemoteReport:{};
+      dataRemoteReport=Object.assign({},old,{address:selection.address,name:selection.name,status:old.data?"stale":"unavailable"});
+    }
+  }finally{dataRemoteLoading=false;if(controllerTab==="data")renderDataDisplay()}
+}
+function dataRemoteTarget(selection){
+  var source=dataRemoteMatches(dataRemoteReport,selection)?dataRemoteReport:{},r=dataObj(source.data);
+  var header='<h4>'+dataText(selection.name)+'</h4><div class="data-sub">EXTERNAL SYSTEM · Selected navigation target</div>';
+  if(!source.data)return header+'<div class="data-sub">'+(source.status==="unavailable"?"Spansh system report unavailable":"Awaiting destination system report…")+'</div>';
+  var main=dataArray(r.bodies).find(b=>b.mainStar===true);
+  var freshness=source.status==="stale"?"Spansh unavailable · cached destination report":source.fetchedAt?"Spansh · retrieved "+age(new Date(source.fetchedAt*1000).toISOString())+" ago":"Spansh · community report";
+  return header+dataMetrics([["Population",dataFmt(r.population)],["Reported facilities",dataArray(r.stations).length],["Reported bodies",dataArray(r.bodies).length]])+
+    dataRows([["Primary star",main&&main.type],["Security",r.security],["Allegiance",r.allegiance],["Government",r.government],["Controlling faction",r.controllingFaction],["Economy",r.economy],["Power",r.power]])+
+    '<div class="data-sub">'+dataText(freshness)+'</div>'+(r.updatedAt?'<div class="data-sub">System report: '+dataText(r.updatedAt)+'</div>':"");
+}
 function dataGauge(label,value,capacity,unit){
   var valid=typeof value==="number"&&typeof capacity==="number"&&capacity>0;
   return '<div class="data-gauge"><span>'+escapeHtml(label)+'</span><strong>'+dataFmt(value,unit)+(typeof capacity==="number"?" / "+dataFmt(capacity,unit):"")+'</strong>'+dataBar(valid?value/capacity*100:null)+'</div>';
@@ -1573,14 +1613,15 @@ function renderDataDisplay(){
   var filter=dataFilter.trim().toLowerCase(),visible=directory.map((v,i)=>({v,i})).filter(x=>(dataDirectoryMode!=="stations"||dataStationMatches(x.v,dataStationFilter))&&(dataDirectoryMode==="factions"||!filter||[x.v.name,x.v.type,x.v.primaryEconomy,x.v.body,x.v.faction,...dataArray(x.v.services),...dataArray(x.v.economies).map(e=>e.name),...dataArray(x.v.materials).map(m=>m.name)].some(v=>String(v||"").toLowerCase().includes(filter))));
   dataSet("dataDirectory",dataDirectoryMode==="map"?dataSystemTree(report):visible.length?visible.map(({v,i})=>dataDirectoryMode==="factions"?dataFaction(v,report.controllingFaction):'<button type="button" data-object-kind="'+dataDirectoryMode+'" data-object-index="'+i+'"><span class="data-directory-title"><strong>'+dataText(v.name)+'</strong><small>'+[v.type,v.primaryEconomy].filter(Boolean).map(dataText).join(" · ")+'</small></span><small>'+dataFmt(v.distance," Ls")+' ›</small></button>').join(""):'<div class="data-sub">'+(directory.length?"No matching objects.":"No "+dataDirectoryMode+" reported in the available data.")+'</div>');
   var dname=String(dest.name||""),same=String(dest.systemAddress||"")===c.addr&&!!c.addr&&String(status.systemAddress||"")===c.addr,matchStation=same?dataArray(report.stations).find(s=>s.name.toLowerCase()===dname.toLowerCase()):null,matchBody=same?dataArray(report.bodies).find(b=>b.name.toLowerCase()===dname.toLowerCase()):null;
-  var liveBody=same?dataArray(survey.bodies).find(b=>String(b.name||"").toLowerCase()===dname.toLowerCase()):null;
-  dataSet("dataTarget",pinned?'<div class="data-pin-bar"><span>PINNED · '+(pinned.cached?"cached selection":source.status==="stale"?"cached report":"directory selection")+' · not in-game target</span><button class="data-button" id="dataUnpin" type="button">FOLLOW TARGET</button></div>'+(pinned.kind==="stations"?dataStation(pinned.entry,false):dataBody(pinned.entry)):!(state&&state.connected)?'<div class="data-sub">Scout disconnected. Target not live.</div>':matchStation?dataStation(matchStation,false):matchBody?dataBody(matchBody):dname?'<h4>'+dataText(dname)+'</h4><div class="data-sub">'+(same?"Local target · detail not reported":"Destination outside current system or scope unavailable")+'</div>'+(liveBody?dataRows([["Body class",liveBody.class||liveBody.planetClass],["Estimated value",dataFmt(liveBody.currentValue," Cr")]]):""):dataIdle("Navigation standby","Select a station or body to view its reported details."));
+  var remote=dataRemoteSelection(),liveBody=same?dataArray(survey.bodies).find(b=>String(b.name||"").toLowerCase()===dname.toLowerCase()):null;
+  dataSet("dataTarget",pinned?'<div class="data-pin-bar"><span>PINNED · '+(pinned.cached?"cached selection":source.status==="stale"?"cached report":"directory selection")+' · not in-game target</span><button class="data-button" id="dataUnpin" type="button">FOLLOW TARGET</button></div>'+(pinned.kind==="stations"?dataStation(pinned.entry,false):dataBody(pinned.entry)):!(state&&state.connected)?'<div class="data-sub">Scout disconnected. Target not live.</div>':matchStation?dataStation(matchStation,false):matchBody?dataBody(matchBody):remote?dataRemoteTarget(remote):dname?'<h4>'+dataText(dname)+'</h4><div class="data-sub">'+(same?"Local target · detail not reported":"Destination outside current system or scope unavailable")+'</div>'+(liveBody?dataRows([["Body class",liveBody.class||liveBody.planetClass],["Estimated value",dataFmt(liveBody.currentValue," Cr")]]):""):dataIdle("Navigation standby","Select a system, station or body to view its reported details."));
   dataSet("dataContact",state&&state.connected&&target.locked?'<h4>'+dataText(target.ship)+'</h4><div class="data-sub">'+dataText(target.pilotName)+'</div>'+dataRows([["Rank",target.pilotRank],["Faction",target.faction],["Legal status",target.legalStatus],["Bounty",dataFmt(target.bounty," Cr")],["Hull",dataFmt(target.hullHealth,"%")]])+dataBar(target.hullHealth)+dataRows([["Shields",dataFmt(target.shieldHealth,"%")]])+dataBar(target.shieldHealth)+dataRows([["Subsystem",dataObj(target.subsystem).name],["Scan stage",target.scanStage]])+'<div class="data-sub">Journal scan · '+dataText(target.timestamp)+'</div>':dataIdle("No ship contact","Target a ship to display its scan information.")+(state&&state.connected?'<div class="data-fallback-label">OWN SHIP STATUS · STANDBY</div>'+dataMetrics([["Hull",dataFmt(ship.hullHealth,"%")],["Main fuel",dataFmt(status.fuelMain," t")],["Legal state",status.legalState]]):""));
   ["auto","ship","explore","route","cargo"].forEach(k=>el("data"+k[0].toUpperCase()+k.slice(1)).classList.toggle("active",dataOpsMode===k));
   var mode=dataOpsMode==="auto"?(nav.active?"route":(state&&state.profile)==="exploration"?"explore":"ship"):dataOpsMode;
   dataSet("dataOps",dataOperations(mode,sc,status,ship,survey,nav));
   renderDataModules(c,status,ship,survey,nav);
   refreshDataDisplay(false);
+  refreshDataRemote(false);
 }
 applyDataLayout();
 dataPanelKeys.forEach(k=>{el("dataExpand"+k).onclick=function(){setDataFocus(k)};el("dataHide"+k).onclick=function(){if(!dataFocus)setDataVisible(k,false)};el("dataVisible"+k).onchange=function(){setDataVisible(k,el("dataVisible"+k).checked)};el("dataModule"+k).onchange=function(){setDataModule(k,el("dataModule"+k).value)};el("dataModuleExtra"+k).onclick=function(e){var toggle=e.target.closest("[data-tree-toggle]");if(toggle){var i=Number(toggle.getAttribute("data-tree-toggle"));if(dataTreeClosed.has(i))dataTreeClosed.delete(i);else dataTreeClosed.add(i);renderDataDisplay();return}var b=e.target.closest("[data-object-kind]");if(b)openDataDetail(b.getAttribute("data-object-kind"),Number(b.getAttribute("data-object-index")))}});
@@ -1597,7 +1638,7 @@ el("dataLayoutOverlay").onclick=function(e){if(e.target===el("dataLayoutOverlay"
 el("dataPin").onclick=pinDataTarget;
 el("dataTarget").onclick=function(e){if(e.target.closest("#dataUnpin"))clearDataPin()};
 el("dataTabButton").onclick=function(){showControllerTab("data")};
-el("dataRefresh").onclick=function(){refreshDataDisplay(true)};
+el("dataRefresh").onclick=function(){refreshDataDisplay(true);refreshDataRemote(true)};
 el("dataClose").onclick=closeDataDetail;
 el("dataOverlay").onclick=function(e){if(e.target===el("dataOverlay"))closeDataDetail()};
 document.addEventListener("keydown",function(e){if(e.key==="Escape"){if(dataLayoutOpen)closeDataLayout();else if(dataDetailKey)closeDataDetail();else if(dataFocus)setDataFocus("")}});

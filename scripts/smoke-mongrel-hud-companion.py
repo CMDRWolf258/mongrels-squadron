@@ -12,7 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"downloads"/"mongrel-hud"))
 import mongrel_hud as hud
 
-assert hud.APP_VERSION=="0.18.37"
+assert hud.APP_VERSION=="0.18.38"
 assert "exploration" in hud.VALID_PROFILES
 assert "surveyor_dss" in hud.PANEL_IDS and "surveyor_body" in hud.PANEL_IDS
 legacy = hud.normalized_layout({"panels":{"surveyor":{"visible":True,"profiles":["surface","navigation"]}}})
@@ -122,7 +122,7 @@ assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.33"}) is Fal
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.34"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.35"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.36"}) is False
-assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.37"}) is False
+assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.38"}) is False
 assert hud.MongrelHudApp._update_snapshot_is_newer({"version":"0.18.38"}) is True
 release=hud.update_from_release_payload({
     "name":"Mongrel HUD Windows v0.18.38",
@@ -719,7 +719,7 @@ with tempfile.TemporaryDirectory() as td:
     site_panels=app.site_panel_texts()
     assert "MISSION CONTROL" in site_panels["mission"]
     assert "Platinum Loop" in site_panels["trade"]
-    assert hud.APP_VERSION=="0.18.37"
+    assert hud.APP_VERSION=="0.18.38"
     assert "Miwae" in site_panels["scoutboard"]
     assert "PAYOUT REQUEST" in site_panels["alerts"]
     assert "10 / 20 CZ pts" in site_panels["mission"]
@@ -1167,7 +1167,14 @@ sample={"system":{"id64":123,"name":"Test","population":4500000000,"controllingF
  "factions":[{"name":"Faction","influence":0.42,"state":"Boom"}],
  "stations":[{"marketId":77,"name":"Port","type":"Orbis","economies":{"Industrial":65,"Extraction":35},"services":["Market","Repair"]}],
  "bodies":[{"name":"Test A 1","bodyId":1,"isLandable":True,"stations":[{"marketId":77,"name":"Port","type":"Orbis"}]}]}}
+sample["system"]["stations"] += [
+    {"marketId":78,"name":"Old build","type":"Orbital Construction Site"},
+    {"marketId":79,"name":"Construction Site: old port","type":"Fleet Carrier"},
+    {"marketId":80,"name":"System Colonisation Ship","type":"Megaship"}]
+sample["system"]["bodies"][0]["stations"].append({"marketId":81,"name":"Surface project","type":"Planetary Construction Site"})
 d=hud.display_system_dump(sample,"Test","123")
+assert not hud.display_construction_site({"name":"Construction Engineering","type":"Orbis"})
+assert not hud.display_construction_site({"name":"Real Carrier","type":"Fleet Carrier"})
 assert d["factions"][0]["influence"]==42
 assert len(d["stations"])==1 and d["stations"][0]["body"]=="Test A 1"
 assert d["stations"][0]["economies"]==[{"name":"Industrial","percent":65.0},{"name":"Extraction","percent":35.0}]
@@ -1189,7 +1196,18 @@ with mock.patch.object(hud,"fetch_display_system",return_value=d) as fetch:
     assert hud.MongrelHudApp.data_display(app_display)["data"]==d
     assert hud.MongrelHudApp.data_display(app_display)["data"]==d
     assert fetch.call_count==1
-print("✓ Data display identity, economy composition, nested stations, caching")
+    app_display.scout_state=lambda:{"system":{"name":"Test","address":"123"},"status":{"destination":{"name":"Other","systemAddress":"456"}}}
+    other=dict(d,name="Other",address="456")
+    fetch.return_value=other
+    assert hud.MongrelHudApp.data_display(app_display,target=True)["data"]==other
+    assert fetch.call_args.args==("Other","456")
+    assert hud.MongrelHudApp.data_display(app_display,target=True)["data"]==other
+    assert hud.MongrelHudApp.data_display(app_display)["data"]==d
+    assert fetch.call_count==2
+    app_display.scout_state=lambda:{"system":{"name":"Test","address":"123"},"status":{"destination":{"name":"Port","systemAddress":"123"}}}
+    assert hud.MongrelHudApp.data_display(app_display,target=True)["status"]=="waiting"
+    assert fetch.call_count==2
+print("✓ Data display identity, economy composition, nested stations, construction filtering and destination caching")
 
 assert hud.RAVEN_FACILITY_IMAGES["dodec"] == "dodec.jpg"
 assert "no_truss" in hud.RAVEN_FACILITY_IMAGES and "apollo" in hud.RAVEN_FACILITY_IMAGES
